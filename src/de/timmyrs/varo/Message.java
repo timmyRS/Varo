@@ -3,10 +3,6 @@ package de.timmyrs.varo;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/*
- * English & German - https://github.com/timmyRS
- * Dutch - https://github.com/ThimoPlays
- */
 enum Message
 {
 	JOIN_SPECTATE("You can no longer partake in this Varo round.", "Du kannst in dieser Varo Runde leider nicht mehr mitmachen.", "Je kan niet langer deelnemen in deze ronde van Varo"),
