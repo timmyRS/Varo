@@ -1,0 +1,14 @@
+name: Varo
+version: 1.0
+author: timmyRS
+website: https://timmyrs.de
+
+main: de.timmyrs.varo.Varo
+
+commands:
+  team:
+    usage: /team [[info]|[invite ]<player>|help|requests|leave]
+  t:
+    usage: /t <message>
+  varo:
+    usage: /varo [tp <player>|start|end|savedefaultitems|flush|reload]
