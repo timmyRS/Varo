@@ -144,7 +144,7 @@ class Team
 			for(Map.Entry<UUID, Integer> entry : players.entrySet())
 			{
 				Player p = Bukkit.getPlayer(entry.getKey());
-				if(p.isOnline())
+				if(p != null && p.isOnline())
 				{
 					Message.TEAM_DISBAND.send(p);
 				}
