@@ -30,7 +30,7 @@ enum Message
 	TEAM_JOINED("§aYou're now in a team with %.", "§aDu bist nun in einem Team mit %.", "§aJe zit nu in een team met %."),
 	TEAM_JOIN("§a% is now in your team.", "§a% ist nun in deinem Team.", "§a% zit nu in je team."),
 	SYNTAX_TEAM("§cSyntax: /team [[info]|[invite ]<player>|help|requests|leave]", "§cSyntax: /team [[info]|[invite ]<Spieler>|help|requests|leave]","§cUitvoering: /team [[info]|[invite ]<speler>|help|requests|leave]"),
-	TEAMREQ_SENT_1("§cYou've sent a team request to %.", "§cDu hast eine Team-Anfrage an % gesendet.", "§cJe hebt een team-aanvraag naar % getuurd."),
+	TEAMREQ_SENT_1("§aYou've sent a team request to %.", "§aDu hast eine Team-Anfrage an % gesendet.", "§aJe hebt een team-aanvraag naar % getuurd."),
 	TEAMREQ_SENT_2("They must now run §6/team %§r to join.", "Diese(r) muss nun §6/team %§r ausführen, um beizutreten.", "Deze speler moet nu §6/team %§r uitvoeren."),
 	TEAMREQ_OUT_NONE("Outgoing Team Requests: None", "Ausgehende Team-Anfragen: Keine", "Uitgaande team uitnodigingen: Geen"),
 	TEAMREQ_OUT("Outgoing Team Requests to:", "Ausgehende Team-Anfragen an:", "Uitgaande team uitnodigingen naar:"),
