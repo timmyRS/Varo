@@ -109,23 +109,27 @@ public class EventHandler implements Listener
 		}
 		final Player p = e.getEntity();
 		final Team t = Team.of(p);
-		synchronized(t.players)
+		if(t != null)
 		{
-			int deaths = t.players.get(p.getUniqueId()) + 1;
-			if(deaths == Varo.instance.getConfig().getInt("livesPerPlayer"))
+			synchronized(t.players)
 			{
-				p.setGameMode(GameMode.SPECTATOR);
-				Message.DEATH_FINAL.send(p);
-				Message.SPECTATE.send(p);
-				t.handleLeave(p);
+				int deaths = t.players.get(p.getUniqueId()) + 1;
+				if(deaths == Varo.instance.getConfig().getInt("livesPerPlayer"))
+				{
+					p.setGameMode(GameMode.SPECTATOR);
+					Message.DEATH_FINAL.send(p);
+					Message.SPECTATE.send(p);
+					t.handleLeave(p);
+				}
+				else
+				{
+					p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
+					p.getInventory().clear();
+				}
+				Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
+				t.players.put(p.getUniqueId(), deaths);
+				Team.updateConfig();
 			}
-			else
-			{
-				p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
-			}
-			Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
-			t.players.put(p.getUniqueId(), deaths);
-			Team.updateConfig();
 		}
 	}
 
