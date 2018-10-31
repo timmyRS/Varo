@@ -112,13 +112,13 @@ public class Varo extends JavaPlugin
 		this.getConfig().addDefault("showDeathMessages", true);
 		final ArrayList<HashMap<String, Object>> defaultStartItems = new ArrayList<>();
 		final HashMap<String, Object> apples = new HashMap<>();
-		apples.put("slot", 0);
+		apples.put("slot", 1);
 		apples.put("type", "APPLE");
 		apples.put("amount", 3);
 		apples.put("durability", 0);
 		defaultStartItems.add(apples);
 		final HashMap<String, Object> compass = new HashMap<>();
-		compass.put("slot", 1);
+		compass.put("slot", 2);
 		compass.put("type", "COMPASS");
 		compass.put("amount", 1);
 		compass.put("durability", 0);
