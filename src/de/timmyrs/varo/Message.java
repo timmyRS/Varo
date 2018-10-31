@@ -15,8 +15,6 @@ enum Message
 	DEATH_FINAL("§cYou died and will only be able to partake again in the next game.", "§cDu bist gestorben§r und kannst wieder in der nächsten Runde mitspielen.", "§cJe bent gestorven en zal niet mee mogen doe in de volgende ronde."),
 	WIN_SINGULAR("§a% has won!", "§a% hat gewonnen!", "§a% heeft gewonnen!"),
 	WIN_MULTIPLE("§a% have won!", "§a% haben gewonnen!", "§a% hebben gewonnen"),
-	LIST_SEPARATOR(", ", ", ", ", "),
-	LIST_SEPARATOR_FINAL(", and ", " und ", "en"),
 	TEAM_DISBAND("§cYour team has been disbanded.", "§cDein Team hat sich aufgelöst.", "§cJe team is ontbonden."),
 	ERROR_UNAUTHORIZED("§cYou are not authorized to use this command.", "§cDu bist nicht authorisiert, diesen Befehl auszuführen.", "§cJe hebt geen toestemming om dit commando uit te voeren."),
 	ERROR_ONGOING("§cThe Varo round has already started.", "§cDie Varo Runde ist bereits am laufen.", "§cDe Varo ronde is al begonnen."),

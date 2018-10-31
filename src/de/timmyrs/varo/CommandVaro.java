@@ -123,7 +123,7 @@ public class CommandVaro implements CommandExecutor
 										{
 											synchronized(t.players)
 											{
-												p.sendMessage(Message.TEAM_JOINED.get(p).replace("%", t.getName(p)));
+												p.sendMessage(Message.TEAM_JOINED.get(p).replace("%", t.getName()));
 												for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 												{
 													Player tp = Bukkit.getPlayer(entry.getKey());
@@ -241,7 +241,9 @@ public class CommandVaro implements CommandExecutor
 								spawnPoint.setZ(spawnPoint.getZ() + .5);
 								placeBedrockUnder(spawnPoint);
 								t.spawnPoint = spawnPoint;
+								t.name = t.getName();
 							}
+							Team.updateConfig();
 							for(Player p : Bukkit.getOnlinePlayers())
 							{
 								p.setGameMode(GameMode.SURVIVAL);

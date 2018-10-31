@@ -27,7 +27,7 @@ public class CommandTeam implements CommandExecutor
 				}
 				else
 				{
-					p.sendMessage(t.getName(p));
+					p.sendMessage(t.getName());
 				}
 			}
 			else if(Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
@@ -66,7 +66,7 @@ public class CommandTeam implements CommandExecutor
 						{
 							t.players.put(r.to, 0);
 						}
-						p.sendMessage(Message.TEAMREQ_OUT + " " + t.getName(p));
+						p.sendMessage(Message.TEAMREQ_OUT + " " + t.getName());
 					}
 					requests = TeamRequest.to(u);
 					if(requests.size() == 0)
@@ -80,7 +80,7 @@ public class CommandTeam implements CommandExecutor
 						{
 							t.players.put(r.from, 0);
 						}
-						p.sendMessage(Message.TEAMREQ_IN + " " + t.getName(p));
+						p.sendMessage(Message.TEAMREQ_IN + " " + t.getName());
 					}
 				}
 				else if(a[0].equalsIgnoreCase("leave"))
@@ -160,7 +160,7 @@ public class CommandTeam implements CommandExecutor
 							}
 							else
 							{
-								s.sendMessage(Message.TEAM_JOINED.get(s).replace("%", t.getName(s)));
+								s.sendMessage(Message.TEAM_JOINED.get(s).replace("%", t.getName()));
 								for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 								{
 									Player tp = Bukkit.getPlayer(entry.getKey());

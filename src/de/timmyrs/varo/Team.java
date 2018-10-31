@@ -17,6 +17,7 @@ class Team
 {
 	static final ArrayList<Team> teams = new ArrayList<>();
 	final HashMap<UUID, Integer> players = new HashMap<>();
+	String name;
 	Location spawnPoint;
 
 	Team()
@@ -36,6 +37,7 @@ class Team
 				{
 					players.put(entry.getKey().toString(), entry.getValue());
 				}
+				team.put("name", t.name);
 				team.put("players", players);
 				if(t.spawnPoint != null)
 				{
@@ -64,49 +66,37 @@ class Team
 		return Team.of(p.getUniqueId());
 	}
 
-	String getName(Player recipient)
+	String getName()
 	{
+		if(name != null)
+		{
+			return name;
+		}
 		synchronized(players)
 		{
-			if(players.size() > 1)
+			if(players.size() == 1)
 			{
-				StringBuilder name = new StringBuilder();
-				int remaining = players.size();
-				for(Map.Entry<UUID, Integer> entry : players.entrySet())
+				return Bukkit.getPlayer(players.entrySet().iterator().next().getKey()).getName();
+			}
+			StringBuilder name = new StringBuilder();
+			int remaining = players.size();
+			for(Map.Entry<UUID, Integer> entry : players.entrySet())
+			{
+				name.append(Bukkit.getPlayer(entry.getKey()).getName());
+				if(--remaining > 0)
 				{
-					Player p = Bukkit.getPlayer(entry.getKey());
-					if(p == null)
+					if(remaining == 1)
 					{
-						name.append("null");
+						name.append(", & ");
 					}
 					else
 					{
-						name.append(p.getName());
-					}
-					if(--remaining > 0)
-					{
-						if(remaining == 1)
-						{
-							name.append(Message.LIST_SEPARATOR_FINAL.get(recipient));
-						}
-						else
-						{
-							name.append(Message.LIST_SEPARATOR.get(recipient));
-						}
+						name.append(", ");
 					}
 				}
-				return name.toString();
 			}
-			else
-			{
-				//noinspection LoopStatementThatDoesntLoop
-				for(Map.Entry<UUID, Integer> entry : players.entrySet())
-				{
-					return Bukkit.getPlayer(entry.getKey()).getName();
-				}
-			}
+			return name.toString();
 		}
-		return "";
 	}
 
 	boolean handleLeave(UUID u)
@@ -119,10 +109,7 @@ class Team
 				this.handleDelete();
 				return false;
 			}
-			else
-			{
-				Team.updateConfig();
-			}
+			Team.updateConfig();
 		}
 		return true;
 	}
@@ -165,12 +152,12 @@ class Team
 							final String winMessage;
 							if(t.players.size() > 1)
 							{
-								winMessage = Message.WIN_MULTIPLE.get(p).replace("%", t.getName(p));
+								winMessage = Message.WIN_MULTIPLE.get(p).replace("%", t.getName());
 								p.sendTitle("", winMessage, 0, 50, 50);
 							}
 							else
 							{
-								winMessage = Message.WIN_SINGULAR.get(p).replace("%", t.getName(p));
+								winMessage = Message.WIN_SINGULAR.get(p).replace("%", t.getName());
 								p.sendTitle(winMessage, Message.NEW_GAME_SOON.get(p), 0, 50, 50);
 								Message.NEW_GAME_SOON.send(p);
 							}
