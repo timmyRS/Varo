@@ -71,6 +71,7 @@ public class Varo extends JavaPlugin
 		p.setExhaustion(0);
 		p.setFoodLevel(20);
 		p.setExp(0);
+		p.getActivePotionEffects().clear();
 	}
 
 	@Override

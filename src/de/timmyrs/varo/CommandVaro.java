@@ -87,23 +87,32 @@ public class CommandVaro implements CommandExecutor
 					{
 						synchronized(Team.teams)
 						{
-							for(Team t : Team.teams)
+							boolean changed;
+							do
 							{
-								synchronized(t.players)
+								changed = false;
+								for(Team t : Team.teams)
 								{
-									for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
+									synchronized(t.players)
 									{
-										final Player p = Bukkit.getPlayer(entry.getKey());
-										if(p == null || !p.isOnline())
+										for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 										{
-											if(!t.handleLeave(entry.getKey()))
+											final Player p = Bukkit.getPlayer(entry.getKey());
+											if(p == null || !p.isOnline())
 											{
+												t.handleLeave(entry.getKey());
+												changed = true;
 												break;
 											}
+										}
+										if(changed)
+										{
+											break;
 										}
 									}
 								}
 							}
+							while(changed);
 							final ArrayList<Player> teamless = new ArrayList<>();
 							for(Player p : Bukkit.getOnlinePlayers())
 							{

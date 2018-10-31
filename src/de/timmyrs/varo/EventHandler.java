@@ -11,6 +11,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
@@ -108,17 +109,8 @@ public class EventHandler implements Listener
 		}
 		final Player p = e.getEntity();
 		final Team t = Team.of(p);
-		Varo.clearPlayer(p);
 		synchronized(t.players)
 		{
-			if(t.spawnPoint != null && Varo.world.getWorldBorder().isInside(t.spawnPoint))
-			{
-				p.teleport(t.spawnPoint);
-			}
-			else
-			{
-				p.teleport(Varo.world.getSpawnLocation());
-			}
 			int deaths = t.players.get(p.getUniqueId()) + 1;
 			if(deaths == Varo.instance.getConfig().getInt("livesPerPlayer"))
 			{
@@ -126,6 +118,32 @@ public class EventHandler implements Listener
 				Message.DEATH_FINAL.send(p);
 				Message.SPECTATE.send(p);
 				t.handleLeave(p);
+			}
+			else
+			{
+				p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
+			}
+			Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
+			t.players.put(p.getUniqueId(), deaths);
+			Team.updateConfig();
+		}
+	}
+
+	@org.bukkit.event.EventHandler
+	public void onPlayerRespawn(PlayerRespawnEvent e)
+	{
+		final Player p = e.getPlayer();
+		final Team t = Team.of(p);
+		if(!Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		{
+			return;
+		}
+		Varo.clearPlayer(p);
+		if(t == null || t.players.get(p.getUniqueId()) == Varo.instance.getConfig().getInt("livesPerPlayer"))
+		{
+			e.setRespawnLocation(Varo.world.getSpawnLocation());
+			if(t != null)
+			{
 				for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 				{
 					Player m = Bukkit.getPlayer(entry.getKey());
@@ -133,28 +151,31 @@ public class EventHandler implements Listener
 					{
 						p.teleport(m);
 						p.setSpectatorTarget(m);
-						return;
+						break;
 					}
 				}
+			}
+		}
+		else
+		{
+			if(t.spawnPoint != null && Varo.world.getWorldBorder().isInside(t.spawnPoint))
+			{
+				e.setRespawnLocation(t.spawnPoint);
 			}
 			else
 			{
-				p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
-				if(Varo.world.getGameRuleValue("keepInventory").equals("false"))
+				e.setRespawnLocation(Varo.world.getSpawnLocation());
+			}
+			if(Varo.world.getGameRuleValue("keepInventory").equals("false"))
+			{
+				synchronized(Varo.startItems)
 				{
-					p.getInventory().clear();
-					synchronized(Varo.startItems)
+					for(Map.Entry<Integer, ItemStack> i : Varo.startItems.entrySet())
 					{
-						for(Map.Entry<Integer, ItemStack> i : Varo.startItems.entrySet())
-						{
-							p.getInventory().setItem(i.getKey(), i.getValue().clone());
-						}
+						p.getInventory().setItem(i.getKey(), i.getValue().clone());
 					}
 				}
 			}
-			Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
-			t.players.put(p.getUniqueId(), deaths);
-			Team.updateConfig();
 		}
 	}
 
