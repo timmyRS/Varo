@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -67,13 +68,12 @@ public class EventHandler implements Listener
 		{
 			return;
 		}
-		final Player p = (Player) e.getEntity();
 		if(!Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			e.setCancelled(true);
 			return;
 		}
-		final boolean lethal = ((p.getHealth() - e.getFinalDamage()) < 1);
+		final Player p = (Player) e.getEntity();
 		final Team t = Team.of(p);
 		if(e instanceof EntityDamageByEntityEvent)
 		{
@@ -85,7 +85,7 @@ public class EventHandler implements Listener
 				{
 					if(t.players.containsKey(d.getUniqueId()))
 					{
-						if(lethal)
+						if((p.getHealth() - e.getFinalDamage()) < 1)
 						{
 							ee.setCancelled(true);
 						}
@@ -93,62 +93,68 @@ public class EventHandler implements Listener
 						{
 							e.setDamage(0);
 						}
-						return;
 					}
 				}
 			}
 		}
-		if(lethal)
+	}
+
+	@org.bukkit.event.EventHandler
+	public void onPlayerDeath(PlayerDeathEvent e)
+	{
+		if(!Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
-			Varo.clearPlayer(p);
-			e.setDamage(0);
-			synchronized(t.players)
+			return;
+		}
+		final Player p = e.getEntity();
+		final Team t = Team.of(p);
+		Varo.clearPlayer(p);
+		synchronized(t.players)
+		{
+			if(t.spawnPoint != null && Varo.world.getWorldBorder().isInside(t.spawnPoint))
 			{
-				if(t.spawnPoint != null && Varo.world.getWorldBorder().isInside(t.spawnPoint))
-				{
-					p.teleport(t.spawnPoint);
-				}
-				else
-				{
-					p.teleport(Varo.world.getSpawnLocation());
-				}
-				int deaths = t.players.get(p.getUniqueId()) + 1;
-				if(deaths == Varo.instance.getConfig().getInt("livesPerPlayer"))
-				{
-					p.setGameMode(GameMode.SPECTATOR);
-					Message.DEATH_FINAL.send(p);
-					Message.SPECTATE.send(p);
-					t.handleLeave(p);
-					for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
-					{
-						Player m = Bukkit.getPlayer(entry.getKey());
-						if(m.isOnline())
-						{
-							p.teleport(m);
-							p.setSpectatorTarget(m);
-							return;
-						}
-					}
-				}
-				else
-				{
-					p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
-					if(Varo.world.getGameRuleValue("keepInventory").equals("false"))
-					{
-						p.getInventory().clear();
-						synchronized(Varo.startItems)
-						{
-							for(Map.Entry<Integer, ItemStack> i : Varo.startItems.entrySet())
-							{
-								p.getInventory().setItem(i.getKey(), i.getValue().clone());
-							}
-						}
-					}
-				}
-				Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
-				t.players.put(p.getUniqueId(), deaths);
-				Team.updateConfig();
+				p.teleport(t.spawnPoint);
 			}
+			else
+			{
+				p.teleport(Varo.world.getSpawnLocation());
+			}
+			int deaths = t.players.get(p.getUniqueId()) + 1;
+			if(deaths == Varo.instance.getConfig().getInt("livesPerPlayer"))
+			{
+				p.setGameMode(GameMode.SPECTATOR);
+				Message.DEATH_FINAL.send(p);
+				Message.SPECTATE.send(p);
+				t.handleLeave(p);
+				for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
+				{
+					Player m = Bukkit.getPlayer(entry.getKey());
+					if(m.isOnline())
+					{
+						p.teleport(m);
+						p.setSpectatorTarget(m);
+						return;
+					}
+				}
+			}
+			else
+			{
+				p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
+				if(Varo.world.getGameRuleValue("keepInventory").equals("false"))
+				{
+					p.getInventory().clear();
+					synchronized(Varo.startItems)
+					{
+						for(Map.Entry<Integer, ItemStack> i : Varo.startItems.entrySet())
+						{
+							p.getInventory().setItem(i.getKey(), i.getValue().clone());
+						}
+					}
+				}
+			}
+			Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
+			t.players.put(p.getUniqueId(), deaths);
+			Team.updateConfig();
 		}
 	}
 

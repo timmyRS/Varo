@@ -209,7 +209,7 @@ public class CommandVaro implements CommandExecutor
 							Varo.world.setGameRuleValue("keepInventory", String.valueOf(Varo.instance.getConfig().getBoolean("keepInventory")));
 							Varo.world.setGameRuleValue("doFireTick", String.valueOf(Varo.instance.getConfig().getBoolean("doFireTick")));
 							Varo.world.setGameRuleValue("mobGriefing", String.valueOf(Varo.instance.getConfig().getBoolean("mobGriefing")));
-							Varo.world.setGameRuleValue("showDeathMessages", "true");
+							Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(Varo.instance.getConfig().getBoolean("showDeathMessages")));
 							final double worldSize = Varo.instance.getConfig().getInt("baseWorldSize") + (Varo.instance.getConfig().getInt("extraWorldSizePerPlayer") * Bukkit.getOnlinePlayers().size());
 							Varo.instance.getConfig().set("donttouchthis.worldSize", worldSize + Varo.instance.getConfig().getInt("baseWorldSize"));
 							Varo.instance.getConfig().set("donttouchthis.ongoing", true);

@@ -108,6 +108,7 @@ public class Varo extends JavaPlugin
 		this.getConfig().addDefault("keepInventory", false);
 		this.getConfig().addDefault("doFireTick", true);
 		this.getConfig().addDefault("mobGriefing", true);
+		this.getConfig().addDefault("showDeathMessages", true);
 		final ArrayList<HashMap<String, Object>> defaultStartItems = new ArrayList<>();
 		final HashMap<String, Object> apples = new HashMap<>();
 		apples.put("slot", 0);

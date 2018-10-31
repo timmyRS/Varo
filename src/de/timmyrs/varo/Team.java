@@ -150,7 +150,7 @@ class Team
 						for(Player p : Bukkit.getOnlinePlayers())
 						{
 							final String winMessage;
-							if(t.players.size() > 1)
+							if(t.getName().contains(" & "))
 							{
 								winMessage = Message.WIN_MULTIPLE.get(p).replace("%", t.getName());
 								p.sendTitle("", winMessage, 0, 50, 50);
@@ -159,11 +159,11 @@ class Team
 							{
 								winMessage = Message.WIN_SINGULAR.get(p).replace("%", t.getName());
 								p.sendTitle(winMessage, Message.NEW_GAME_SOON.get(p), 0, 50, 50);
-								Message.NEW_GAME_SOON.send(p);
 							}
 							p.setGameMode(GameMode.SPECTATOR);
 							Varo.clearPlayer(p);
 							p.sendMessage(winMessage);
+							Message.NEW_GAME_SOON.send(p);
 						}
 						final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
 						if(!deleteIndicator.exists())
