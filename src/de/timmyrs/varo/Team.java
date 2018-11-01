@@ -99,24 +99,22 @@ class Team
 		}
 	}
 
-	boolean handleLeave(UUID u)
+	void handleLeave(UUID u)
 	{
 		synchronized(players)
 		{
 			players.remove(u);
-			if(players.size() < (Varo.instance.getConfig().getBoolean("donottouch.ongoing") ? 1 : 2))
+			if(players.size() < (Varo.instance.getConfig().getBoolean("donttouchthis.ongoing") ? 1 : 2))
 			{
 				this.handleDelete();
-				return false;
 			}
 			Team.updateConfig();
 		}
-		return true;
 	}
 
-	boolean handleLeave(Player p)
+	void handleLeave(Player p)
 	{
-		return this.handleLeave(p.getUniqueId());
+		this.handleLeave(p.getUniqueId());
 	}
 
 	void handleDelete()

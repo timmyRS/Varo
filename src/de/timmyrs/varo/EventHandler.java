@@ -114,21 +114,21 @@ public class EventHandler implements Listener
 			synchronized(t.players)
 			{
 				int deaths = t.players.get(p.getUniqueId()) + 1;
-				if(deaths == Varo.instance.getConfig().getInt("livesPerPlayer"))
+				if(deaths < Varo.instance.getConfig().getInt("livesPerPlayer"))
+				{
+					p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
+					t.players.put(p.getUniqueId(), deaths);
+					Team.updateConfig();
+				}
+				else
 				{
 					p.setGameMode(GameMode.SPECTATOR);
 					Message.DEATH_FINAL.send(p);
 					Message.SPECTATE.send(p);
 					t.handleLeave(p);
-				}
-				else
-				{
-					p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
 					p.getInventory().clear();
 				}
 				Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
-				t.players.put(p.getUniqueId(), deaths);
-				Team.updateConfig();
 			}
 		}
 	}

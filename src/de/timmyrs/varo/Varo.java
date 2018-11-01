@@ -8,6 +8,7 @@ import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -71,7 +72,10 @@ public class Varo extends JavaPlugin
 		p.setExhaustion(0);
 		p.setFoodLevel(20);
 		p.setExp(0);
-		p.getActivePotionEffects().clear();
+		for(PotionEffect pe : p.getActivePotionEffects())
+		{
+			p.removePotionEffect(pe.getType());
+		}
 	}
 
 	@Override
@@ -169,7 +173,7 @@ public class Varo extends JavaPlugin
 		}
 		//noinspection unchecked
 		final ArrayList<HashMap<String, Object>> teams = (ArrayList<HashMap<String, Object>>) this.getConfig().getList("donttouchthis.teams");
-		if(teams == null)
+		if(teams == null || !this.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			Team.updateConfig();
 		}
