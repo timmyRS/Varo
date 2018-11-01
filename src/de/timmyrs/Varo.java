@@ -40,9 +40,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Varo extends JavaPlugin implements Listener, CommandExecutor
 {
 	static Varo instance;
-	static World world;
+	private static World world;
 	private static final HashMap<Integer, ItemStack> startItems = new HashMap<>();
-	static int startTimer = 0;
+	private static int startTimer = 0;
 
 	private static void worldshrinker()
 	{
@@ -124,7 +124,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		return null;
 	}
 
-	static void clearPlayer(Player p)
+	private static void clearPlayer(Player p)
 	{
 		p.setHealth(20);
 		p.setExhaustion(0);
@@ -168,6 +168,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		this.getConfig().addDefault("baseWorldSize", 50);
 		this.getConfig().addDefault("extraWorldSizePerPlayer", 200);
 		this.getConfig().addDefault("baseWorldShrinkPerSecond", 0.20D);
+		this.getConfig().addDefault("colornames", true);
 		this.getConfig().addDefault("worldType", "DEFAULT, FLAT, DEFAULT_1_1, LARGEBIOMES, or AMPLIFIED");
 		this.getConfig().addDefault("announceAdvancements", false);
 		this.getConfig().addDefault("keepInventory", false);
@@ -264,6 +265,10 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					if(t.containsKey("name"))
 					{
 						team.name = (String) t.get("name");
+					}
+					if(t.containsKey("color"))
+					{
+						team.color = (String) t.get("color");
 					}
 					Team.teams.add(team);
 				}
@@ -370,13 +375,13 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 						{
 							Message.ERROR_UNAUTHORIZED.send(s);
 						}
-						else if(Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+						else if(this.getConfig().getBoolean("donttouchthis.ongoing"))
 						{
 							Message.ERROR_ONGOING.send(s);
 						}
 						else
 						{
-							if(Bukkit.getOnlinePlayers().size() / Varo.instance.getConfig().getInt("maxTeamSize") < 2)
+							if(Bukkit.getOnlinePlayers().size() / this.getConfig().getInt("maxTeamSize") < 2)
 							{
 								Message.START_INSUFFICIENT_PLAYERS.send(s);
 							}
@@ -422,7 +427,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									{
 										synchronized(t.players)
 										{
-											if(t.players.size() < Varo.instance.getConfig().getInt("maxTeamSize"))
+											if(t.players.size() < this.getConfig().getInt("maxTeamSize"))
 											{
 												final ArrayList<Player> removedTeamless = new ArrayList<>();
 												for(Player p : teamless)
@@ -440,7 +445,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 														}
 														t.players.put(p.getUniqueId(), 0);
 														removedTeamless.add(p);
-														if(t.players.size() < Varo.instance.getConfig().getInt("maxTeamSize"))
+														if(t.players.size() < this.getConfig().getInt("maxTeamSize"))
 														{
 															break;
 														}
@@ -458,7 +463,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										Team t = new Team();
 										for(Player p : teamless)
 										{
-											if(t.players.size() >= Varo.instance.getConfig().getInt("maxTeamSize"))
+											if(t.players.size() >= this.getConfig().getInt("maxTeamSize"))
 											{
 												Team.teams.add(t);
 												t = new Team();
@@ -504,7 +509,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										name = "varo" + ThreadLocalRandom.current().nextInt(1000, 10000);
 									}
 									while(new File(name).exists());
-									WorldType wt = WorldType.getByName(Varo.instance.getConfig().getString("worldType"));
+									WorldType wt = WorldType.getByName(this.getConfig().getString("worldType"));
 									if(wt == null)
 									{
 										wt = WorldType.NORMAL;
@@ -516,21 +521,33 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									worldSpawn.setZ(worldSpawn.getZ() + .5);
 									placeBedrockUnder(worldSpawn);
 									Varo.world.setSpawnLocation(worldSpawn);
-									Varo.world.setGameRuleValue("announceAdvancements", String.valueOf(Varo.instance.getConfig().getBoolean("announceAdvancements")));
-									Varo.world.setGameRuleValue("keepInventory", String.valueOf(Varo.instance.getConfig().getBoolean("keepInventory")));
-									Varo.world.setGameRuleValue("doFireTick", String.valueOf(Varo.instance.getConfig().getBoolean("doFireTick")));
-									Varo.world.setGameRuleValue("mobGriefing", String.valueOf(Varo.instance.getConfig().getBoolean("mobGriefing")));
-									Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(Varo.instance.getConfig().getBoolean("showDeathMessages")));
-									final double worldSize = Varo.instance.getConfig().getInt("baseWorldSize") + (Varo.instance.getConfig().getInt("extraWorldSizePerPlayer") * Bukkit.getOnlinePlayers().size());
-									Varo.instance.getConfig().set("donttouchthis.worldSize", worldSize + Varo.instance.getConfig().getInt("baseWorldSize"));
-									Varo.instance.getConfig().set("donttouchthis.ongoing", true);
-									Varo.instance.getConfig().set("donttouchthis.shrinkFactor", 1);
+									Varo.world.setGameRuleValue("announceAdvancements", String.valueOf(this.getConfig().getBoolean("announceAdvancements")));
+									Varo.world.setGameRuleValue("keepInventory", String.valueOf(this.getConfig().getBoolean("keepInventory")));
+									Varo.world.setGameRuleValue("doFireTick", String.valueOf(this.getConfig().getBoolean("doFireTick")));
+									Varo.world.setGameRuleValue("mobGriefing", String.valueOf(this.getConfig().getBoolean("mobGriefing")));
+									Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(this.getConfig().getBoolean("showDeathMessages")));
+									final double worldSize = this.getConfig().getInt("baseWorldSize") + (this.getConfig().getInt("extraWorldSizePerPlayer") * Bukkit.getOnlinePlayers().size());
+									this.getConfig().set("donttouchthis.worldSize", worldSize + this.getConfig().getInt("baseWorldSize"));
+									this.getConfig().set("donttouchthis.ongoing", true);
+									this.getConfig().set("donttouchthis.shrinkFactor", 1);
 									Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
 									Varo.world.getWorldBorder().setSize(worldSize);
-									Varo.world.getWorldBorder().setWarningDistance(Varo.instance.getConfig().getInt("baseWorldSize") / 2);
+									Varo.world.getWorldBorder().setWarningDistance(this.getConfig().getInt("baseWorldSize") / 2);
 									final int min = (int) (worldSize * -0.5);
 									final int max = (int) Math.round(worldSize * 0.5) + 1;
-									final int spawnThreshold = Varo.instance.getConfig().getInt("baseWorldSize") / 2;
+									final int spawnThreshold = this.getConfig().getInt("baseWorldSize") / 2;
+									if(this.getConfig().getBoolean("colornames"))
+									{
+										final String[] colors = new String[]{"1", "2", "3", "4", "5", "6", "9", "a", "b", "c", "d", "e", "f", "l", "n", "o"};
+										if(Team.teams.size() <= colors.length)
+										{
+											int i = 0;
+											for(Team t : Team.teams)
+											{
+												t.color = colors[i++];
+											}
+										}
+									}
 									for(Team t : Team.teams)
 									{
 										int tries = 0;
@@ -562,6 +579,10 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										p.getInventory().clear();
 										final Team t = Team.of(p);
 										p.teleport(t.spawnPoint);
+										if(t.color != null)
+										{
+											p.setPlayerListName("§" + t.color + p.getName());
+										}
 										synchronized(t.players)
 										{
 											if(t.players.get(p.getUniqueId()) != 0)
@@ -569,14 +590,24 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 												t.players.put(p.getUniqueId(), 0);
 											}
 										}
+										boolean hasCompass = false;
 										synchronized(Varo.startItems)
 										{
 											for(Map.Entry<Integer, ItemStack> i : Varo.startItems.entrySet())
 											{
 												p.getInventory().setItem(i.getKey(), i.getValue().clone());
+												if(!hasCompass && i.getValue().getType() == Material.COMPASS)
+												{
+													hasCompass = true;
+												}
 											}
 										}
+										p.getInventory().setHeldItemSlot(0);
 										Message.HAVE_FUN.send(p);
+										if(hasCompass)
+										{
+											Message.COMPASS_INFO.send(p);
+										}
 									}
 									startTimer = 0;
 								}
@@ -589,14 +620,13 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 						{
 							Message.ERROR_UNAUTHORIZED.send(s);
 						}
-						else if(!Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+						else if(!this.getConfig().getBoolean("donttouchthis.ongoing"))
 						{
 							Message.ERROR_NOT_ONGOING.send(s);
 						}
 						else
 						{
-							Varo.startTimer = -1;
-							Varo.instance.getConfig().set("donttouchthis.ongoing", false);
+
 							if(!(s instanceof Player))
 							{
 								Message.PREMATURE_END.send(s);
@@ -606,28 +636,8 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 								final String message = s instanceof Player ? Message.PREMATURE_END_BY.get(p).replace("%", s.getName()) : Message.PREMATURE_END.get(p);
 								p.sendMessage(message);
 								p.sendTitle("", message, 0, 50, 20);
-								p.setGameMode(GameMode.SPECTATOR);
-								Varo.clearPlayer(p);
-								p.getInventory().clear();
 							}
-							final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
-							if(!deleteIndicator.exists())
-							{
-								try
-								{
-									//noinspection ResultOfMethodCallIgnored
-									deleteIndicator.createNewFile();
-								}
-								catch(IOException ignored)
-								{
-								}
-							}
-							Varo.world = null;
-							for(Player p : Bukkit.getOnlinePlayers())
-							{
-								Message.NEW_GAME_SOON.send(p);
-							}
-							Bukkit.getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->Varo.startTimer = 0, 80);
+							endRound();
 						}
 					}
 					else if(a[0].equalsIgnoreCase("savedefaultitems"))
@@ -654,7 +664,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 								}
 								slot++;
 							}
-							Varo.instance.getConfig().set("startItems", startItems);
+							this.getConfig().set("startItems", startItems);
 							Message.SAVED_DEFAULT_ITEMS.send(p);
 						}
 						else
@@ -670,7 +680,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 						}
 						else
 						{
-							Varo.instance.saveConfig();
+							this.saveConfig();
 							Message.FLUSH_OK.send(s);
 						}
 					}
@@ -682,7 +692,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 						}
 						else
 						{
-							Varo.instance.reloadConfig();
+							this.reloadConfig();
 							Message.RELOAD_OK.send(s);
 						}
 					}
@@ -708,11 +718,11 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 							p.sendMessage(t.getName());
 						}
 					}
-					else if(Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+					else if(this.getConfig().getBoolean("donttouchthis.ongoing"))
 					{
 						Message.ERROR_ONGOING.send(p);
 					}
-					else if(Varo.instance.getConfig().getInt("maxTeamSize") < 2)
+					else if(this.getConfig().getInt("maxTeamSize") < 2)
 					{
 						Message.ERROR_NO_TEAMS.send(p);
 					}
@@ -834,6 +844,34 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		return true;
 	}
 
+	static void endRound()
+	{
+		Varo.startTimer = -1;
+		Varo.instance.getConfig().set("donttouchthis.ongoing", false);
+		for(Player p : Bukkit.getOnlinePlayers())
+		{
+			p.setGameMode(GameMode.SPECTATOR);
+			p.setPlayerListName(p.getName());
+			Varo.clearPlayer(p);
+			p.getInventory().clear();
+			Message.NEW_GAME_SOON.send(p);
+		}
+		final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
+		if(!deleteIndicator.exists())
+		{
+			try
+			{
+				//noinspection ResultOfMethodCallIgnored
+				deleteIndicator.createNewFile();
+			}
+			catch(IOException ignored)
+			{
+			}
+		}
+		Varo.world = null;
+		Bukkit.getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->Varo.startTimer = 0, 80);
+	}
+
 	private void placeBedrockUnder(Location location)
 	{
 		if(location.getBlock().getType().isSolid())
@@ -890,7 +928,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					{
 						synchronized(t.players)
 						{
-							if(t.players.size() == Varo.instance.getConfig().getInt("maxTeamSize"))
+							if(t.players.size() == this.getConfig().getInt("maxTeamSize"))
 							{
 								s.sendMessage(Message.ERROR_TEAM_FULL.get(p).replace("%", p.getName()));
 							}
@@ -938,13 +976,14 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		{
 			p.teleport(Varo.world.getSpawnLocation());
 		}
-		if(Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		if(this.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			final Team t = Team.of(p);
 			if(t == null)
 			{
+				p.setPlayerListName(p.getName());
 				p.setGameMode(GameMode.SPECTATOR);
-				Bukkit.getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->
+				Bukkit.getScheduler().scheduleSyncDelayedTask(this, ()->
 				{
 					Message.JOIN_SPECTATE.send(p);
 					Message.SPECTATE.send(p);
@@ -953,16 +992,21 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 			else
 			{
 				p.setGameMode(GameMode.SURVIVAL);
-				Bukkit.getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->Message.JOIN_CONTINUE.send(p), 40);
+				if(t.color != null)
+				{
+					p.setPlayerListName("§" + t.color + p.getName());
+				}
+				Bukkit.getScheduler().scheduleSyncDelayedTask(this, ()->Message.JOIN_CONTINUE.send(p), 40);
 			}
 		}
 		else
 		{
+			p.setPlayerListName(p.getName());
 			p.setGameMode(GameMode.SPECTATOR);
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->
+			Bukkit.getScheduler().scheduleSyncDelayedTask(this, ()->
 			{
 				Message.NEW_GAME_SOON.send(p);
-				if(Varo.instance.getConfig().getInt("maxTeamSize") > 1)
+				if(this.getConfig().getInt("maxTeamSize") > 1)
 				{
 					Message.TEAM_INFO_1.send(p);
 					Message.TEAM_INFO_2.send(p);
@@ -979,7 +1023,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		{
 			return;
 		}
-		if(!Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		if(!this.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			e.setCancelled(true);
 			return;
@@ -1014,7 +1058,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 	@SuppressWarnings("unused")
 	public void onPlayerDeath(PlayerDeathEvent e)
 	{
-		if(!Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		if(!this.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			return;
 		}
@@ -1025,9 +1069,9 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 			synchronized(t.players)
 			{
 				int deaths = t.players.get(p.getUniqueId()) + 1;
-				if(deaths < Varo.instance.getConfig().getInt("livesPerPlayer"))
+				if(deaths < this.getConfig().getInt("livesPerPlayer"))
 				{
-					p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(Varo.instance.getConfig().getInt("livesPerPlayer") - deaths)));
+					p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(this.getConfig().getInt("livesPerPlayer") - deaths)));
 					t.players.put(p.getUniqueId(), deaths);
 					Team.updateConfig();
 				}
@@ -1039,7 +1083,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					t.handleLeave(p);
 					p.getInventory().clear();
 				}
-				Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
+				this.getConfig().set("donttouchthis.shrinkFactor", this.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
 			}
 		}
 	}
@@ -1050,12 +1094,12 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 	{
 		final Player p = e.getPlayer();
 		final Team t = Team.of(p);
-		if(!Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		if(!this.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			return;
 		}
 		Varo.clearPlayer(p);
-		if(t == null || t.players.get(p.getUniqueId()) == Varo.instance.getConfig().getInt("livesPerPlayer"))
+		if(t == null || t.players.get(p.getUniqueId()) == this.getConfig().getInt("livesPerPlayer"))
 		{
 			e.setRespawnLocation(Varo.world.getSpawnLocation());
 			if(t != null)
@@ -1111,7 +1155,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 	{
 		final Player p = e.getPlayer();
 		final Location l = p.getLocation();
-		if(!p.getWorld().getWorldBorder().isInside(l) && Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		if(!p.getWorld().getWorldBorder().isInside(l) && this.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			final int y = p.getGameMode() == GameMode.SPECTATOR ? 0 : 2;
 			if(Math.abs(l.getX()) > Math.abs(l.getZ()))
@@ -1197,6 +1241,7 @@ enum Message
 	AUTOSTART_TIME("A new Varo round will start in % seconds.", "Eine neue Varo Runde wird in % Sekunden starten.", "Een nieuwe Varo begint in % seconden."),
 	GET_READY("§eGet ready!", "§eMach dich bereit!", "§eMaak je klaar!"),
 	HAVE_FUN("§aHave fun!", "§aViel Spaß!", "§aVeel plezier!"),
+	COMPASS_INFO("Your compass points to the center (0, 0) where you're safe from the border.", "Dein Kompass zeigt auf die Mitte (0, 0) bei der du von der Grenze sicher bist.", "Je kompas wijst naar het midden (0, 0) waar je veilig bent voor de rand."),
 	PREMATURE_END("The Varo round has been terminated prematurely.", "Die Varo Runde wurde frühzeitig beendet.", "Deze Varo ronde is vroegtijdig beëindigd."),
 	PREMATURE_END_BY("The Varo round has been terminated prematurely by %.", "Die Varo Runde wurde frühzeitig von % beendet.", "Deze Varo ronde is vroegtijdig beëindigd door %.");
 
@@ -1249,6 +1294,7 @@ class Team
 	final HashMap<UUID, Integer> players = new HashMap<>();
 	String name;
 	Location spawnPoint;
+	String color;
 
 	Team()
 	{
@@ -1267,8 +1313,15 @@ class Team
 				{
 					players.put(entry.getKey().toString(), entry.getValue());
 				}
-				team.put("name", t.name);
 				team.put("players", players);
+				if(t.name != null)
+				{
+					team.put("name", t.name);
+				}
+				if(t.color != null)
+				{
+					team.put("color", t.color);
+				}
 				if(t.spawnPoint != null)
 				{
 					team.put("spawnPoint", new Double[]{t.spawnPoint.getX(), t.spawnPoint.getY(), t.spawnPoint.getZ()});
@@ -1374,8 +1427,6 @@ class Team
 					Team t = teams.get(0);
 					synchronized(t.players)
 					{
-						Varo.startTimer = -1;
-						Varo.instance.getConfig().set("donttouchthis.ongoing", false);
 						for(Player p : Bukkit.getOnlinePlayers())
 						{
 							final String winMessage;
@@ -1389,25 +1440,8 @@ class Team
 								winMessage = Message.WIN_SINGULAR.get(p).replace("%", t.getName());
 								p.sendTitle(winMessage, Message.NEW_GAME_SOON.get(p), 0, 50, 50);
 							}
-							p.setGameMode(GameMode.SPECTATOR);
-							Varo.clearPlayer(p);
-							p.sendMessage(winMessage);
-							Message.NEW_GAME_SOON.send(p);
 						}
-						final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
-						if(!deleteIndicator.exists())
-						{
-							try
-							{
-								//noinspection ResultOfMethodCallIgnored
-								deleteIndicator.createNewFile();
-							}
-							catch(IOException ignored)
-							{
-							}
-						}
-						Varo.world = null;
-						Bukkit.getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->Varo.startTimer = 0, 80);
+						Varo.endRound();
 					}
 				}
 			}
