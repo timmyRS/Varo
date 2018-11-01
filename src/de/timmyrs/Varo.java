@@ -6,6 +6,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.WorldType;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -128,6 +129,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		this.getConfig().addDefault("baseWorldSize", 50);
 		this.getConfig().addDefault("extraWorldSizePerPlayer", 200);
 		this.getConfig().addDefault("baseWorldShrinkPerSecond", 0.20D);
+		this.getConfig().addDefault("worldType", "DEFAULT, FLAT, DEFAULT_1_1, LARGEBIOMES, or AMPLIFIED");
 		this.getConfig().addDefault("announceAdvancements", false);
 		this.getConfig().addDefault("keepInventory", false);
 		this.getConfig().addDefault("doFireTick", true);
@@ -265,7 +267,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 				}
 				else
 				{
-					if(a[0].equalsIgnoreCase("tp") || a[0].equalsIgnoreCase("teleport"))
+					if(a[0].equalsIgnoreCase("tp"))
 					{
 						if(s instanceof Player)
 						{
@@ -294,6 +296,21 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									Message.TELEPORT_UNAUTHORIZED.send(p);
 								}
 							}
+						}
+						else
+						{
+							Message.ERROR_PLAYERS_ONLY.send(s);
+						}
+					}
+					else if(a[0].equalsIgnoreCase("tpcenter"))
+					{
+						if(s instanceof Player)
+						{
+							Player p = (Player) s;
+							final Location center = p.getWorld().getHighestBlockAt(0, 0).getLocation();
+							center.setX(center.getX() + .5);
+							center.setZ(center.getZ() + .5);
+							p.teleport(center);
 						}
 						else
 						{
@@ -440,7 +457,12 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										name = "varo" + ThreadLocalRandom.current().nextInt(1000, 10000);
 									}
 									while(new File(name).exists());
-									Bukkit.createWorld(new WorldCreator(name));
+									WorldType wt = WorldType.getByName(Varo.instance.getConfig().getString("worldType"));
+									if(wt == null)
+									{
+										wt = WorldType.NORMAL;
+									}
+									Bukkit.createWorld(new WorldCreator(name).type(wt));
 									Varo.world = Bukkit.getWorld(name);
 									final Location worldSpawn = Varo.world.getHighestBlockAt(0, 0).getLocation();
 									worldSpawn.setX(worldSpawn.getX() + .5);
@@ -1114,7 +1136,7 @@ enum Message
 	TEAMREQ_OUT("Outgoing Team Requests to:", "Ausgehende Team-Anfragen an:", "Uitgaande team uitnodigingen naar:"),
 	TEAMREQ_IN_NONE("Incoming Team Requests: None", "Eingehende Team-Anfragen: Keine", "Inkomende team uitnodigingen van: Niemand"),
 	TEAMREQ_IN("Incoming Team Requests from:", "Eingehende Team-Anfragen von:", "Inkomende team uitnodigingen van:"),
-	SYNTAX_VARO("§cSyntax: /varo [tp <player>|start|end|savedefaultitems|flush|reload]", "§cSyntax: /varo [tp <Spieler>|start|end|savedefaultitems|flush|reload]", "§cUitvoering: /varo [tp <speler>|start|end|savedefaultitems|flush|reload]"),
+	SYNTAX_VARO("§cSyntax: /varo [tp <player>|tpcenter|start|end|savedefaultitems|flush|reload]", "§cSyntax: /varo [tp <Spieler>|tpcenter|start|end|savedefaultitems|flush|reload]", "§cUitvoering: /varo [tp <speler>|tpcenter|start|end|savedefaultitems|flush|reload]"),
 	TELEPORT_UNAUTHORIZED("§cOnly spectators and admins are allowed to teleport.", "§cNur Zuschauer und Admins dürfen sich teleportieren.", "§cAlleen de doden en Admins mogen teleporteren."),
 	SAVED_DEFAULT_ITEMS("§aYour inventory has been saved as the start inventory for new Varo rounds.", "§aDein Inventar wurde als das Start-Inventar für neue Varo Runden gespeichert.", "§aJe inventory is opgleslagen als je start inventory voor de volgende ronde."),
 	FLUSH_OK("§aFlushed configuration to disk.", "§aDie Konfiguration wurde auf die Platte geschrieben.",  "§aFlushed-configuratie naar schijf."),
@@ -1140,14 +1162,21 @@ enum Message
 
 	String get(Player recipient)
 	{
-		final String lang = recipient.getLocale().substring(0, 2).toLowerCase();
-		if(lang.equals("de"))
+		switch(recipient.getLocale().substring(0, 2).toLowerCase())
 		{
-			return de;
-		}
-		if(lang.equals("nl"))
-		{
-			return nl;
+			case "de":
+				if(de != null)
+				{
+					return de;
+				}
+				break;
+
+			case "nl":
+				if(nl != null)
+				{
+					return nl;
+				}
+				break;
 		}
 		return en;
 	}
