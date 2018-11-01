@@ -306,11 +306,18 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					{
 						if(s instanceof Player)
 						{
-							Player p = (Player) s;
-							final Location center = p.getWorld().getHighestBlockAt(0, 0).getLocation();
-							center.setX(center.getX() + .5);
-							center.setZ(center.getZ() + .5);
-							p.teleport(center);
+							final Player p = (Player) s;
+							if(p.getGameMode() == GameMode.SPECTATOR || p.isOp())
+							{
+								final Location center = p.getWorld().getHighestBlockAt(0, 0).getLocation();
+								center.setX(center.getX() + .5);
+								center.setZ(center.getZ() + .5);
+								p.teleport(center);
+							}
+							else
+							{
+								Message.TELEPORT_UNAUTHORIZED.send(p);
+							}
 						}
 						else
 						{
