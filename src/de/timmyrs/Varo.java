@@ -129,6 +129,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		p.setHealth(20);
 		p.setExhaustion(0);
 		p.setFoodLevel(20);
+		p.setLevel(0);
 		p.setExp(0);
 		for(PotionEffect pe : p.getActivePotionEffects())
 		{
