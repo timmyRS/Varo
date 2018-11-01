@@ -173,7 +173,8 @@ public class Varo extends JavaPlugin
 		}
 		//noinspection unchecked
 		final ArrayList<HashMap<String, Object>> teams = (ArrayList<HashMap<String, Object>>) this.getConfig().getList("donttouchthis.teams");
-		if(teams == null || !this.getConfig().getBoolean("donttouchthis.ongoing"))
+		final boolean fixTeams = (teams != null || !this.getConfig().getBoolean("donttouchthis.ongoing"));
+		if(teams == null)
 		{
 			Team.updateConfig();
 		}
@@ -202,6 +203,9 @@ public class Varo extends JavaPlugin
 					Team.teams.add(team);
 				}
 			}
+		}
+		if(fixTeams)
+		{
 			synchronized(Team.teams)
 			{
 				final ArrayList<Team> _teams = new ArrayList<>(Team.teams);
