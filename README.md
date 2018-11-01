@@ -1,5 +1,9 @@
 # Varo
 
-Play Varo with your friends. Just put the jar file into your plugins folder, restart your server, edit the config.yml to your liking, restart again, then dispatch /varo start to start a round of Varo; to terminate the round prematurely use /varo end.
+Play Varo with your friends on 1.12.2+ Spigot servers.
 
-**Please note that you need Spigot 1.12.2. Spigot 1.12 is not going to cut it.** If you encounter any bugs using Spigot 1.12.2, please [create an issue](https://github.com/timmyrs/Varo/issues/new).
+## What's Varo?
+
+It's team PvP with teams of size 1 to infinity in a randomly generated world where each team spawns in a random location. Last team standing wins.
+
+If you encounter any bugs, please [create an issue](https://github.com/timmyrs/Varo/issues/new).
