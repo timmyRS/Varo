@@ -64,9 +64,9 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 
 	private static void autostarter()
 	{
-		if(Varo.instance.getConfig().getBoolean("autostart") && !Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		if(Varo.instance.getConfig().getBoolean("autostart.enabled") && !Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
 		{
-			if(Bukkit.getOnlinePlayers().size() < (Varo.instance.getConfig().getInt("maxTeamSize") * 2))
+			if(Bukkit.getOnlinePlayers().size() < (Varo.instance.getConfig().getInt("maxTeamSize") * Varo.instance.getConfig().getInt("autostart.minTeams")))
 			{
 				if(startTimer != 0)
 				{
@@ -77,11 +77,11 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 			{
 				if(startTimer == 0)
 				{
-					startTimer = 60;
+					startTimer = Varo.instance.getConfig().getInt("autostart.time");
 				}
-				if(startTimer > 21 && Bukkit.getOnlinePlayers().size() >= (Varo.instance.getConfig().getInt("maxTeamSize") * 4))
+				if(startTimer >= (Varo.instance.getConfig().getInt("autostart.reducedTime") + 1) && Bukkit.getOnlinePlayers().size() >= (Varo.instance.getConfig().getInt("maxTeamSize") * Varo.instance.getConfig().getInt("autostart.optimalTeams")))
 				{
-					startTimer = 21;
+					startTimer = Varo.instance.getConfig().getInt("autostart.reducedTime") + 1;
 				}
 				if(--startTimer == 0)
 				{
@@ -162,19 +162,23 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 			}
 		}
 		this.getConfig().addDefault("info", "This file should NOT be edited WHILE a Varo round is ONGOING.");
-		this.getConfig().addDefault("autostart", false);
 		this.getConfig().addDefault("maxTeamSize", 2);
 		this.getConfig().addDefault("livesPerPlayer", 1);
-		this.getConfig().addDefault("baseWorldSize", 50);
-		this.getConfig().addDefault("extraWorldSizePerPlayer", 200);
+		this.getConfig().addDefault("baseWorldSize", 70);
+		this.getConfig().addDefault("extraWorldSizePerPlayer", 150);
 		this.getConfig().addDefault("baseWorldShrinkPerSecond", 0.20D);
-		this.getConfig().addDefault("colornames", true);
+		this.getConfig().addDefault("colorNames", true);
 		this.getConfig().addDefault("worldType", "DEFAULT, FLAT, DEFAULT_1_1, LARGEBIOMES, or AMPLIFIED");
 		this.getConfig().addDefault("announceAdvancements", false);
 		this.getConfig().addDefault("keepInventory", false);
 		this.getConfig().addDefault("doFireTick", true);
 		this.getConfig().addDefault("mobGriefing", true);
 		this.getConfig().addDefault("showDeathMessages", true);
+		this.getConfig().addDefault("autostart.enabled", false);
+		this.getConfig().addDefault("autostart.minTeams", 2);
+		this.getConfig().addDefault("autostart.time", 300);
+		this.getConfig().addDefault("autostart.optimalTeams", 6);
+		this.getConfig().addDefault("autostart.reducedTime", 30);
 		final ArrayList<HashMap<String, Object>> defaultStartItems = new ArrayList<>();
 		final HashMap<String, Object> apples = new HashMap<>();
 		apples.put("slot", 1);
@@ -527,16 +531,16 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									Varo.world.setGameRuleValue("mobGriefing", String.valueOf(this.getConfig().getBoolean("mobGriefing")));
 									Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(this.getConfig().getBoolean("showDeathMessages")));
 									final double worldSize = this.getConfig().getInt("baseWorldSize") + (this.getConfig().getInt("extraWorldSizePerPlayer") * Bukkit.getOnlinePlayers().size());
-									this.getConfig().set("donttouchthis.worldSize", worldSize + this.getConfig().getInt("baseWorldSize"));
+									this.getConfig().set("donttouchthis.worldSize", worldSize);
 									this.getConfig().set("donttouchthis.ongoing", true);
 									this.getConfig().set("donttouchthis.shrinkFactor", 1);
 									Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
 									Varo.world.getWorldBorder().setSize(worldSize);
 									Varo.world.getWorldBorder().setWarningDistance(this.getConfig().getInt("baseWorldSize") / 2);
-									final int min = (int) (worldSize * -0.5);
+									final int min = (int) Math.round(worldSize * -0.5);
 									final int max = (int) Math.round(worldSize * 0.5) + 1;
 									final int spawnThreshold = this.getConfig().getInt("baseWorldSize") / 2;
-									if(this.getConfig().getBoolean("colornames"))
+									if(this.getConfig().getBoolean("colorNames"))
 									{
 										final String[] colors = new String[]{"1", "2", "3", "4", "5", "6", "9", "a", "b", "c", "d", "e", "f", "l", "n", "o"};
 										if(Team.teams.size() <= colors.length)
@@ -563,7 +567,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 											}
 											highestBlock = Varo.world.getHighestBlockAt(x, z);
 										}
-										while(highestBlock == null || (!highestBlock.getType().isBlock() && ++tries < 100));
+										while(highestBlock == null || (!highestBlock.getType().isBlock() && ++tries < 10000));
 										final Location spawnPoint = highestBlock.getLocation();
 										spawnPoint.setX(spawnPoint.getX() + .5);
 										spawnPoint.setZ(spawnPoint.getZ() + .5);
@@ -634,8 +638,8 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 							for(Player p : Bukkit.getOnlinePlayers())
 							{
 								final String message = s instanceof Player ? Message.PREMATURE_END_BY.get(p).replace("%", s.getName()) : Message.PREMATURE_END.get(p);
-								p.sendMessage(message);
 								p.sendTitle("", message, 0, 50, 20);
+								p.sendMessage(message);
 							}
 							endRound();
 						}
@@ -1078,6 +1082,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 				else
 				{
 					p.setGameMode(GameMode.SPECTATOR);
+					p.setPlayerListName(p.getName());
 					Message.DEATH_FINAL.send(p);
 					Message.SPECTATE.send(p);
 					t.handleLeave(p);
@@ -1440,6 +1445,7 @@ class Team
 								winMessage = Message.WIN_SINGULAR.get(p).replace("%", t.getName());
 								p.sendTitle(winMessage, Message.NEW_GAME_SOON.get(p), 0, 50, 50);
 							}
+							p.sendMessage(winMessage);
 						}
 						Varo.endRound();
 					}
