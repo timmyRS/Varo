@@ -319,7 +319,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 							else
 							{
 
-								if(p.getGameMode() == GameMode.SPECTATOR || p.isOp())
+								if(p.getGameMode() == GameMode.SPECTATOR || p.hasPermission("varo.admin"))
 								{
 									final Player t = Varo.getPlayer(a[1]);
 									if(t == null)
@@ -347,7 +347,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 						if(s instanceof Player)
 						{
 							final Player p = (Player) s;
-							if(p.getGameMode() == GameMode.SPECTATOR || p.isOp())
+							if(p.getGameMode() == GameMode.SPECTATOR || p.hasPermission("varo.admin"))
 							{
 								final Location center = p.getWorld().getHighestBlockAt(0, 0).getLocation();
 								center.setX(center.getX() + .5);
@@ -366,7 +366,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					}
 					else if(a[0].equalsIgnoreCase("start"))
 					{
-						if(s instanceof Player && !s.isOp())
+						if(s instanceof Player && !s.hasPermission("varo.start"))
 						{
 							Message.ERROR_UNAUTHORIZED.send(s);
 						}
@@ -585,7 +585,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					}
 					else if(a[0].equalsIgnoreCase("end"))
 					{
-						if(s instanceof Player && !s.isOp())
+						if(s instanceof Player && !s.hasPermission("varo.admin"))
 						{
 							Message.ERROR_UNAUTHORIZED.send(s);
 						}
@@ -664,7 +664,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					}
 					else if(a[0].equalsIgnoreCase("flush"))
 					{
-						if(s instanceof Player && !s.isOp())
+						if(s instanceof Player && !s.hasPermission("varo.admin"))
 						{
 							Message.ERROR_UNAUTHORIZED.send(s);
 						}
@@ -676,7 +676,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					}
 					else if(a[0].equalsIgnoreCase("reload"))
 					{
-						if(s instanceof Player && !s.isOp())
+						if(s instanceof Player && !s.hasPermission("varo.admin"))
 						{
 							Message.ERROR_UNAUTHORIZED.send(s);
 						}
@@ -1194,7 +1194,7 @@ enum Message
 	SYNTAX_TEAMMESSAGE("§cSyntax: /t <message>", "§cSyntax: /t <Nachricht>", "§cUitvoering: /t <bericht>"),
 	TEAM_LEFT("§aYou are no longer in a team.", "§aDu bist nun in keinem Team mehr.", "§aJe zit niet langer in een team."),
 	START_INSUFFICIENT_PLAYERS("§cThere are not enough players to start.", "§cEs sind nicht genug Spieler zum starten da.", "§cEr zijn niet genoeg spelers om te starten."),
-	AUTOSTART_TIME("A new Varo round will start in % seconds.", "Eine neue Varo Runde wird in % Sekunden starten.", null),
+	AUTOSTART_TIME("A new Varo round will start in % seconds.", "Eine neue Varo Runde wird in % Sekunden starten.", "Een nieuwe Varo begint in % seconden."),
 	GET_READY("§eGet ready!", "§eMach dich bereit!", "§eMaak je klaar!"),
 	HAVE_FUN("§aHave fun!", "§aViel Spaß!", "§aVeel plezier!"),
 	PREMATURE_END("The Varo round has been terminated prematurely.", "Die Varo Runde wurde frühzeitig beendet.", "Deze Varo ronde is vroegtijdig beëindigd."),

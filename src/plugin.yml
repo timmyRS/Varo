@@ -1,10 +1,10 @@
 ---
 name: Varo
-version: 1.0.8
+version: 1.1-dev
+main: de.timmyrs.Varo
+api-version: 1.12.2
 author: timmyRS
 website: https://github.com/timmyrs/Varo
-
-main: de.timmyrs.Varo
 
 commands:
   team:
@@ -12,4 +12,17 @@ commands:
   t:
     usage: /t <message>
   varo:
-    usage: /varo [tp <player>|start|end|savedefaultitems|flush|reload]
+    usage: /varo [tp <player>|tpcenter|start|end|savedefaultitems|flush|reload]
+
+permissions:
+  varo.*:
+    default: op
+    description: Grants all varo.* permissions
+    children:
+      varo.admin: true
+  varo.admin:
+    description: Allows the player to use all Varo admin commands
+    children:
+      varo.start: true
+  varo.start:
+    description: Allows the player to use /varo start
