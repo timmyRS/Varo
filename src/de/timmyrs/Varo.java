@@ -176,7 +176,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		this.getConfig().addDefault("showDeathMessages", true);
 		this.getConfig().addDefault("autostart.enabled", false);
 		this.getConfig().addDefault("autostart.minTeams", 2);
-		this.getConfig().addDefault("autostart.time", 300);
+		this.getConfig().addDefault("autostart.time", 180);
 		this.getConfig().addDefault("autostart.optimalTeams", 6);
 		this.getConfig().addDefault("autostart.reducedTime", 30);
 		final ArrayList<HashMap<String, Object>> defaultStartItems = new ArrayList<>();
@@ -1160,30 +1160,31 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 	{
 		final Player p = e.getPlayer();
 		final Location l = p.getLocation();
-		if(!p.getWorld().getWorldBorder().isInside(l) && this.getConfig().getBoolean("donttouchthis.ongoing"))
+		if(p.getWorld().getWorldBorder().isInside(l) || !this.getConfig().getBoolean("donttouchthis.ongoing") || p.getGameMode() != GameMode.SURVIVAL)
 		{
-			final int y = p.getGameMode() == GameMode.SPECTATOR ? 0 : 2;
-			if(Math.abs(l.getX()) > Math.abs(l.getZ()))
+			return;
+		}
+		final int y = p.getLocation().getBlockY() < 64 ? 10 : 2;
+		if(Math.abs(l.getX()) > Math.abs(l.getZ()))
+		{
+			if(l.getX() > 0)
 			{
-				if(l.getX() > 0)
-				{
-					p.setVelocity(new Vector(-10, y, 0));
-				}
-				else
-				{
-					p.setVelocity(new Vector(10, y, 0));
-				}
+				p.setVelocity(new Vector(-10, y, 0));
 			}
-			if(Math.abs(l.getX()) < Math.abs(l.getZ()))
+			else
 			{
-				if(l.getZ() > 0)
-				{
-					p.setVelocity(new Vector(0, y, -10));
-				}
-				else
-				{
-					p.setVelocity(new Vector(0, y, 10));
-				}
+				p.setVelocity(new Vector(10, y, 0));
+			}
+		}
+		if(Math.abs(l.getX()) < Math.abs(l.getZ()))
+		{
+			if(l.getZ() > 0)
+			{
+				p.setVelocity(new Vector(0, y, -10));
+			}
+			else
+			{
+				p.setVelocity(new Vector(0, y, 10));
 			}
 		}
 	}
