@@ -200,6 +200,10 @@ public class Varo extends JavaPlugin
 							team.spawnPoint = new Location(Varo.world, coords.get(0), coords.get(1), coords.get(2));
 						}
 					}
+					if(t.containsKey("name"))
+					{
+						team.name = (String) t.get("name");
+					}
 					Team.teams.add(team);
 				}
 			}
