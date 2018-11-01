@@ -10,6 +10,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
@@ -221,6 +222,20 @@ public class EventHandler implements Listener
 				{
 					p.setVelocity(new Vector(0, y, 10));
 				}
+			}
+		}
+	}
+
+	@org.bukkit.event.EventHandler
+	public void onPlayerKick(PlayerKickEvent e)
+	{
+		final Player p = e.getPlayer();
+		if(Bukkit.getServer().getBannedPlayers().contains(p))
+		{
+			final Team t = Team.of(p);
+			if(t != null)
+			{
+				t.handleLeave(p);
 			}
 		}
 	}
