@@ -1,9 +1,9 @@
 name: Varo
 version: 1.0.8
 author: timmyRS
-website: https://timmyrs.de
+website: https://github.com/timmyrs/Varo
 
-main: de.timmyrs.varo.Varo
+main: de.timmyrs.Varo
 
 commands:
   team:
