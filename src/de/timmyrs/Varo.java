@@ -112,27 +112,29 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 			return;
 		}
 		final long disqualificationTime = System.currentTimeMillis() - (Varo.instance.getConfig().getInt("leaveDisqualificationMinutes") * 60000L);
+		final ArrayList<Team> _teams;
 		synchronized(teams)
 		{
-			for(Team t : teams)
+			_teams = new ArrayList<>(teams);
+		}
+		for(Team t : _teams)
+		{
+			synchronized(t.players)
 			{
 				boolean changed;
 				do
 				{
 					changed = false;
-					synchronized(t.players)
+					for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 					{
-						for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
+						final OfflinePlayer p = Varo.instance.getServer().getOfflinePlayer(entry.getKey());
+						if(p == null || (!p.isOnline() && p.getLastPlayed() < disqualificationTime))
 						{
-							final OfflinePlayer p = Varo.instance.getServer().getOfflinePlayer(entry.getKey());
-							if(p == null || (!p.isOnline() && p.getLastPlayed() < disqualificationTime))
+							if(t.handleLeave(entry.getKey()))
 							{
-								if(t.handleLeave(entry.getKey()))
-								{
-									changed = true;
-								}
-								break;
+								changed = true;
 							}
+							break;
 						}
 					}
 				}
@@ -440,17 +442,18 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 							{
 								synchronized(teams)
 								{
-									boolean changed;
-									do
+									final ArrayList<Team> _teams = new ArrayList<>(teams);
+									for(Team t : _teams)
 									{
-										changed = false;
-										for(Team t : teams)
+										synchronized(t.players)
 										{
-											synchronized(t.players)
+											boolean changed;
+											do
 											{
+												changed = false;
 												for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 												{
-													final Player p = getServer().getPlayer(entry.getKey());
+													final OfflinePlayer p = getServer().getOfflinePlayer(entry.getKey());
 													if(p == null || !p.isOnline())
 													{
 														t.handleLeave(entry.getKey());
@@ -458,14 +461,11 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 														break;
 													}
 												}
-												if(changed)
-												{
-													break;
-												}
+
 											}
+											while(changed);
 										}
 									}
-									while(changed);
 									final ArrayList<Player> teamless = new ArrayList<>();
 									for(Player p : getServer().getOnlinePlayers())
 									{
