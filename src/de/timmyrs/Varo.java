@@ -229,6 +229,8 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		getConfig().addDefault("leaveDisqualificationMinutes", 0);
 		getConfig().addDefault("colorNames", true);
 		getConfig().addDefault("worldType", "DEFAULT, FLAT, DEFAULT_1_1, LARGEBIOMES, or AMPLIFIED");
+		getConfig().addDefault("generateStructures", true);
+		getConfig().addDefault("generatorSettings", "{\"seaLevel\":1}");
 		getConfig().addDefault("keepInventory", false);
 		getConfig().addDefault("doFireTick", true);
 		getConfig().addDefault("mobGriefing", true);
@@ -565,7 +567,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									{
 										wt = WorldType.NORMAL;
 									}
-									getServer().createWorld(new WorldCreator(name).type(wt));
+									getServer().createWorld(new WorldCreator(name).type(wt).generateStructures(getConfig().getBoolean("generateStructures")).generatorSettings(getConfig().getString("generatorSettings")));
 									Varo.world = getServer().getWorld(name);
 									final Location worldSpawn = Varo.world.getHighestBlockAt(0, 0).getLocation();
 									worldSpawn.setX(worldSpawn.getX() + .5);
@@ -577,13 +579,13 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									Varo.world.setGameRuleValue("doFireTick", String.valueOf(getConfig().getBoolean("doFireTick")));
 									Varo.world.setGameRuleValue("mobGriefing", String.valueOf(getConfig().getBoolean("mobGriefing")));
 									Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(getConfig().getBoolean("showDeathMessages")));
-									final double worldSize = getConfig().getInt("baseWorldSize") + (getConfig().getInt("extraWorldSizePerPlayer") * getServer().getOnlinePlayers().size());
-									getConfig().set("donttouchthis.worldSize", worldSize);
+									final double worldSize = (getConfig().getInt("extraWorldSizePerPlayer") * getServer().getOnlinePlayers().size());
+									getConfig().set("donttouchthis.worldSize", worldSize + getConfig().getInt("baseWorldSize"));
 									getConfig().set("donttouchthis.ongoing", true);
 									getConfig().set("donttouchthis.shrinkFactor", 1);
 									Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
 									Varo.world.getWorldBorder().setSize(worldSize);
-									Varo.world.getWorldBorder().setWarningDistance(getConfig().getInt("baseWorldSize") / 2);
+									Varo.world.getWorldBorder().setWarningDistance(getConfig().getInt("baseWorldSize"));
 									final int min = (int) Math.round(worldSize * -0.5);
 									final int max = (int) Math.round(worldSize * 0.5) + 1;
 									final int spawnThreshold = getConfig().getInt("baseWorldSize") / 2;
@@ -601,7 +603,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									}
 									for(Team t : teams)
 									{
-										int tries = 0;
+										long tries = 0;
 										Block highestBlock;
 										do
 										{
@@ -614,7 +616,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 											}
 											highestBlock = Varo.world.getHighestBlockAt(x, z);
 										}
-										while(highestBlock == null || (!highestBlock.getType().isBlock() && ++tries < Integer.MAX_VALUE));
+										while(highestBlock == null || (!highestBlock.getType().isBlock() && ++tries < Long.MAX_VALUE));
 										final Location spawnPoint = highestBlock.getLocation();
 										spawnPoint.setX(spawnPoint.getX() + .5);
 										spawnPoint.setZ(spawnPoint.getZ() + .5);
