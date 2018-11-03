@@ -21,7 +21,6 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.server.ServerListPingEvent;
@@ -29,7 +28,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.io.IOException;
@@ -586,6 +584,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 									Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
 									Varo.world.getWorldBorder().setSize(worldSize);
 									Varo.world.getWorldBorder().setWarningDistance(getConfig().getInt("baseWorldSize"));
+									Varo.world.getWorldBorder().setDamageBuffer(0);
 									final int min = (int) Math.round(worldSize * -0.5);
 									final int max = (int) Math.round(worldSize * 0.5) + 1;
 									final int spawnThreshold = getConfig().getInt("baseWorldSize") / 2;
@@ -1223,40 +1222,6 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		if(Varo.world != null && !e.getPlayer().getWorld().equals(Varo.world))
 		{
 			e.getPlayer().teleport(Varo.world.getSpawnLocation());
-		}
-	}
-
-	@EventHandler
-	public void onPlayerMove(PlayerMoveEvent e)
-	{
-		final Player p = e.getPlayer();
-		final Location l = p.getLocation();
-		if(p.getWorld().getWorldBorder().isInside(l) || !getConfig().getBoolean("donttouchthis.ongoing") || p.getGameMode() != GameMode.SURVIVAL)
-		{
-			return;
-		}
-		final int y = p.getLocation().getBlockY() < 64 ? 10 : 2;
-		if(Math.abs(l.getX()) > Math.abs(l.getZ()))
-		{
-			if(l.getX() > 0)
-			{
-				p.setVelocity(new Vector(-10, y, 0));
-			}
-			else
-			{
-				p.setVelocity(new Vector(10, y, 0));
-			}
-		}
-		if(Math.abs(l.getX()) < Math.abs(l.getZ()))
-		{
-			if(l.getZ() > 0)
-			{
-				p.setVelocity(new Vector(0, y, -10));
-			}
-			else
-			{
-				p.setVelocity(new Vector(0, y, 10));
-			}
 		}
 	}
 
