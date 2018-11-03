@@ -904,7 +904,10 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		for(Player p : Varo.instance.getServer().getOnlinePlayers())
 		{
 			p.setGameMode(GameMode.SPECTATOR);
-			p.setPlayerListName(p.getName());
+			if(Varo.instance.getConfig().getBoolean("colorNames"))
+			{
+				p.setPlayerListName(p.getName());
+			}
 			Varo.clearPlayer(p);
 			p.getInventory().clear();
 			Message.NEW_GAME_SOON.send(p);
@@ -1049,7 +1052,6 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 			final Team t = Team.of(p);
 			if(t == null)
 			{
-				p.setPlayerListName(p.getName());
 				p.setGameMode(GameMode.SPECTATOR);
 				getServer().getScheduler().scheduleSyncDelayedTask(this, ()->
 				{
@@ -1070,7 +1072,6 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		}
 		else
 		{
-			p.setPlayerListName(p.getName());
 			p.setGameMode(GameMode.SPECTATOR);
 			getServer().getScheduler().scheduleSyncDelayedTask(this, ()->
 			{
@@ -1151,7 +1152,10 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 				else
 				{
 					p.setGameMode(GameMode.SPECTATOR);
-					p.setPlayerListName(p.getName());
+					if(getConfig().getBoolean("colorNames"))
+					{
+						p.setPlayerListName(p.getName());
+					}
 					Message.DEATH_FINAL.send(p);
 					Message.SPECTATE.send(p);
 					t.handleLeave(p);
