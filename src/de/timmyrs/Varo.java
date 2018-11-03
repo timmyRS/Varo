@@ -1044,7 +1044,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		{
 			p.teleport(Varo.world.getSpawnLocation());
 		}
-		else if(getConfig().getBoolean("donttouchthis.ongoing"))
+		if(getConfig().getBoolean("donttouchthis.ongoing"))
 		{
 			final Team t = Team.of(p);
 			if(t == null)
