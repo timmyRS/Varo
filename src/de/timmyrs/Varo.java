@@ -32,6 +32,7 @@ import org.bukkit.potion.PotionEffect;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -173,6 +174,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		p.setFoodLevel(20);
 		p.setLevel(0);
 		p.setExp(0);
+		p.setFireTicks(0);
 		for(PotionEffect pe : p.getActivePotionEffects())
 		{
 			p.removePotionEffect(pe.getType());
@@ -243,13 +245,13 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		getConfig().addDefault("motd.ongoing", "IN GAME");
 		final ArrayList<HashMap<String, Object>> defaultStartItems = new ArrayList<>();
 		final HashMap<String, Object> apples = new HashMap<>();
-		apples.put("slot", 1);
+		apples.put("slot", 2);
 		apples.put("type", "APPLE");
-		apples.put("amount", 3);
+		apples.put("amount", 5);
 		apples.put("durability", 0);
 		defaultStartItems.add(apples);
 		final HashMap<String, Object> compass = new HashMap<>();
-		compass.put("slot", 2);
+		compass.put("slot", 8);
 		compass.put("type", "COMPASS");
 		compass.put("amount", 1);
 		compass.put("durability", 0);
@@ -434,7 +436,8 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 						}
 						else
 						{
-							if(getServer().getOnlinePlayers().size() / getConfig().getInt("maxTeamSize") < 2)
+							final Collection<? extends Player> onlinePlayers = getServer().getOnlinePlayers();
+							if(onlinePlayers.size() / getConfig().getInt("maxTeamSize") < 2)
 							{
 								Message.START_INSUFFICIENT_PLAYERS.send(s);
 							}
@@ -467,7 +470,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										}
 									}
 									final ArrayList<Player> teamless = new ArrayList<>();
-									for(Player p : getServer().getOnlinePlayers())
+									for(Player p : onlinePlayers)
 									{
 										if(Team.of(p) == null)
 										{
@@ -532,7 +535,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										Message.START_INSUFFICIENT_PLAYERS.send(s);
 										return true;
 									}
-									for(Player p : getServer().getOnlinePlayers())
+									for(Player p : onlinePlayers)
 									{
 										p.sendTitle(Message.GET_READY.get(p), "", 0, 50, 50);
 										Message.GET_READY.send(p);
@@ -624,7 +627,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										t.name = t.getName();
 									}
 									Team.updateConfig();
-									for(Player p : getServer().getOnlinePlayers())
+									for(Player p : onlinePlayers)
 									{
 										p.setGameMode(GameMode.SURVIVAL);
 										Varo.clearPlayer(p);
@@ -655,7 +658,14 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 											}
 										}
 										p.getInventory().setHeldItemSlot(0);
-										Message.HAVE_FUN.send(p);
+										if(getConfig().getInt("maxTeamSize") > 1)
+										{
+											Message.HAVE_FUN_TEAMS.send(p);
+										}
+										else
+										{
+											Message.HAVE_FUN.send(p);
+										}
 										if(hasCompass)
 										{
 											Message.COMPASS_INFO.send(p);
@@ -1282,6 +1292,7 @@ enum Message
 	AUTOSTART_TIME("A new Varo round will start in % seconds.", "Eine neue Varo Runde wird in % Sekunden starten.", "Een nieuwe Varo begint in % seconden."),
 	GET_READY("§eGet ready!", "§eMach dich bereit!", "§eMaak je klaar!"),
 	HAVE_FUN("§aHave fun!", "§aViel Spaß!", "§aVeel plezier!"),
+	HAVE_FUN_TEAMS("§aHave fun and communicate with your team using §6/t!", "§aViel Spaß und kommuniziere mit deinem Team mit §6/t!", "§aVeel plezier en communiceer met je team met behulp van §6/t!"),
 	COMPASS_INFO("Your compass points to the center (0, 0) where you're safe from the border.", "Dein Kompass zeigt auf die Mitte (0, 0) bei der du von der Grenze sicher bist.", "Je kompas wijst naar het midden (0, 0) waar je veilig bent voor de rand."),
 	PREMATURE_END("The Varo round has been terminated prematurely.", "Die Varo Runde wurde frühzeitig beendet.", "Deze Varo ronde is vroegtijdig beëindigd."),
 	PREMATURE_END_BY("The Varo round has been terminated prematurely by %.", "Die Varo Runde wurde frühzeitig von % beendet.", "Deze Varo ronde is vroegtijdig beëindigd door %.");
