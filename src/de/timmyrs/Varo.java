@@ -1147,6 +1147,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					p.sendMessage(Message.DEATH.get(p).replace("%", String.valueOf(getConfig().getInt("livesPerPlayer") - deaths)));
 					t.players.put(p.getUniqueId(), deaths);
 					Team.updateConfig();
+					getConfig().set("donttouchthis.shrinkFactor", getConfig().getInt("donttouchthis.shrinkFactor") + 1);
 				}
 				else
 				{
@@ -1161,7 +1162,6 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 					p.getInventory().clear();
 					handleLeaveDisqualification();
 				}
-				getConfig().set("donttouchthis.shrinkFactor", getConfig().getInt("donttouchthis.shrinkFactor") + 1);
 			}
 		}
 	}
@@ -1437,6 +1437,10 @@ class Team
 				ret = false;
 			}
 			Team.updateConfig();
+		}
+		if(Varo.instance.getConfig().getBoolean("donttouchthis.ongoing"))
+		{
+			Varo.instance.getConfig().set("donttouchthis.shrinkFactor", Varo.instance.getConfig().getInt("donttouchthis.shrinkFactor") + 1);
 		}
 		return ret;
 	}
