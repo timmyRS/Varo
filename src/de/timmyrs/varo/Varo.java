@@ -1,5 +1,7 @@
-package de.timmyrs;
+package de.timmyrs.varo;
 
+import de.timmyrs.varo.events.VaroRoundEndEvent;
+import de.timmyrs.varo.events.VaroRoundStartEvent;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -43,8 +45,8 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 {
 	static final ArrayList<Team> teams = new ArrayList<>();
 	static Varo instance;
-	private static World world;
-	private static final HashMap<Integer, ItemStack> startItems = new HashMap<>();
+	public static World world;
+	public static final HashMap<Integer, ItemStack> startItems = new HashMap<>();
 	private static int startTimer = 0;
 
 	private static void handleWorldShrinking()
@@ -230,7 +232,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		getConfig().addDefault("colorNames", true);
 		getConfig().addDefault("worldType", "DEFAULT, FLAT, DEFAULT_1_1, LARGEBIOMES, or AMPLIFIED");
 		getConfig().addDefault("generateStructures", true);
-		getConfig().addDefault("generatorSettings", "{\"seaLevel\":1}");
+		getConfig().addDefault("generatorSettings", "");
 		getConfig().addDefault("keepInventory", false);
 		getConfig().addDefault("doFireTick", true);
 		getConfig().addDefault("mobGriefing", true);
@@ -357,8 +359,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 	@Override
 	public boolean onCommand(CommandSender s, Command c, String l, String[] a)
 	{
-		final String cn = c.getName();
-		switch(cn)
+		switch(c.getName())
 		{
 			case "varo":
 				if(a.length == 0)
@@ -535,97 +536,127 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										Message.START_INSUFFICIENT_PLAYERS.send(s);
 										return true;
 									}
-									for(Player p : onlinePlayers)
-									{
-										p.sendTitle(Message.GET_READY.get(p), "", 0, 50, 50);
-										Message.GET_READY.send(p);
-									}
-									if(Varo.world != null)
-									{
-										getServer().unloadWorld(Varo.world, true);
-										final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
-										if(!deleteIndicator.exists())
-										{
-											try
-											{
-												//noinspection ResultOfMethodCallIgnored
-												deleteIndicator.createNewFile();
-											}
-											catch(IOException ignored)
-											{
-											}
-										}
-										Varo.world = null;
-									}
-									String name;
+									boolean goodWorld = true;
 									do
 									{
-										name = "varo" + ThreadLocalRandom.current().nextInt(1000, 10000);
-									}
-									while(new File(name).exists());
-									WorldType wt = WorldType.getByName(getConfig().getString("worldType"));
-									if(wt == null)
-									{
-										wt = WorldType.NORMAL;
-									}
-									getServer().createWorld(new WorldCreator(name).type(wt).generateStructures(getConfig().getBoolean("generateStructures")).generatorSettings(getConfig().getString("generatorSettings")));
-									Varo.world = getServer().getWorld(name);
-									final Location worldSpawn = Varo.world.getHighestBlockAt(0, 0).getLocation();
-									worldSpawn.setX(worldSpawn.getX() + .5);
-									worldSpawn.setZ(worldSpawn.getZ() + .5);
-									placeBedrockUnder(worldSpawn);
-									Varo.world.setSpawnLocation(worldSpawn);
-									Varo.world.setGameRuleValue("announceAdvancements", "false");
-									Varo.world.setGameRuleValue("keepInventory", String.valueOf(getConfig().getBoolean("keepInventory")));
-									Varo.world.setGameRuleValue("doFireTick", String.valueOf(getConfig().getBoolean("doFireTick")));
-									Varo.world.setGameRuleValue("mobGriefing", String.valueOf(getConfig().getBoolean("mobGriefing")));
-									Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(getConfig().getBoolean("showDeathMessages")));
-									final double worldSize = (getConfig().getInt("extraWorldSizePerPlayer") * getServer().getOnlinePlayers().size());
-									getConfig().set("donttouchthis.worldSize", worldSize + getConfig().getInt("baseWorldSize"));
-									getConfig().set("donttouchthis.ongoing", true);
-									getConfig().set("donttouchthis.shrinkFactor", 1);
-									Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
-									Varo.world.getWorldBorder().setSize(worldSize);
-									Varo.world.getWorldBorder().setWarningDistance(getConfig().getInt("baseWorldSize"));
-									Varo.world.getWorldBorder().setDamageBuffer(0);
-									final int min = (int) Math.round(worldSize * -0.5);
-									final int max = (int) Math.round(worldSize * 0.5) + 1;
-									final int spawnThreshold = getConfig().getInt("baseWorldSize") / 2;
-									if(getConfig().getBoolean("colorNames"))
-									{
-										final String[] colors = new String[]{"1", "2", "3", "4", "5", "6", "9", "a", "b", "c", "d", "e", "f", "l", "n", "o"};
-										if(teams.size() <= colors.length)
+										for(Player p : onlinePlayers)
 										{
-											int i = 0;
-											for(Team t : teams)
+											if(goodWorld)
 											{
-												t.color = colors[i++];
+												p.sendTitle(Message.GET_READY.get(p), "", 0, 70, 50);
+												Message.GET_READY.send(p);
+											}
+											else
+											{
+												p.sendTitle(Message.GET_READY.get(p), Message.GET_READY_AGAIN.get(p), 0, 70, 50);
+												Message.GET_READY_AGAIN.send(p);
 											}
 										}
-									}
-									for(Team t : teams)
-									{
-										long tries = 0;
-										Block highestBlock;
+										goodWorld = true;
+										if(Varo.world != null)
+										{
+											getServer().unloadWorld(Varo.world, true);
+											final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
+											if(!deleteIndicator.exists())
+											{
+												try
+												{
+													//noinspection ResultOfMethodCallIgnored
+													deleteIndicator.createNewFile();
+												}
+												catch(IOException ignored)
+												{
+												}
+											}
+											Varo.world = null;
+										}
+										String name;
 										do
 										{
-											highestBlock = null;
-											final int x = ThreadLocalRandom.current().nextInt(min, max);
-											final int z = ThreadLocalRandom.current().nextInt(min, max);
-											if(Math.abs(x) < spawnThreshold || Math.abs(z) < spawnThreshold)
-											{
-												continue;
-											}
-											highestBlock = Varo.world.getHighestBlockAt(x, z);
+											name = "varo" + ThreadLocalRandom.current().nextInt(1000, 10000);
 										}
-										while(highestBlock == null || (!highestBlock.getType().isBlock() && ++tries < Long.MAX_VALUE));
-										final Location spawnPoint = highestBlock.getLocation();
-										spawnPoint.setX(spawnPoint.getX() + .5);
-										spawnPoint.setZ(spawnPoint.getZ() + .5);
-										placeBedrockUnder(spawnPoint);
-										t.spawnPoint = spawnPoint;
-										t.name = t.getName();
+										while(new File(name).exists());
+										WorldType wt = WorldType.getByName(getConfig().getString("worldType"));
+										if(wt == null)
+										{
+											wt = WorldType.NORMAL;
+										}
+										getServer().createWorld(new WorldCreator(name).type(wt).generateStructures(getConfig().getBoolean("generateStructures")).generatorSettings(getConfig().getString("generatorSettings")));
+										Varo.world = getServer().getWorld(name);
+										final Location worldSpawn = Varo.world.getHighestBlockAt(0, 0).getLocation();
+										worldSpawn.setX(worldSpawn.getX() + .5);
+										worldSpawn.setZ(worldSpawn.getZ() + .5);
+										placeBedrockUnder(worldSpawn);
+										Varo.world.setSpawnLocation(worldSpawn);
+										Varo.world.setGameRuleValue("announceAdvancements", "false");
+										Varo.world.setGameRuleValue("keepInventory", String.valueOf(getConfig().getBoolean("keepInventory")));
+										Varo.world.setGameRuleValue("doFireTick", String.valueOf(getConfig().getBoolean("doFireTick")));
+										Varo.world.setGameRuleValue("mobGriefing", String.valueOf(getConfig().getBoolean("mobGriefing")));
+										Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(getConfig().getBoolean("showDeathMessages")));
+										final double worldSize = (getConfig().getInt("extraWorldSizePerPlayer") * getServer().getOnlinePlayers().size());
+										getConfig().set("donttouchthis.worldSize", worldSize + getConfig().getInt("baseWorldSize"));
+										getConfig().set("donttouchthis.ongoing", true);
+										getConfig().set("donttouchthis.shrinkFactor", 1);
+										Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
+										Varo.world.getWorldBorder().setSize(worldSize);
+										Varo.world.getWorldBorder().setWarningDistance(getConfig().getInt("baseWorldSize"));
+										Varo.world.getWorldBorder().setDamageBuffer(0);
+										final int min = (int) Math.round(worldSize * -0.5);
+										final int max = (int) Math.round(worldSize * 0.5) + 1;
+										final int spawnThreshold = getConfig().getInt("baseWorldSize") / 2;
+										if(getConfig().getBoolean("colorNames"))
+										{
+											final String[] colors = new String[]{"1", "2", "3", "4", "5", "6", "9", "a", "b", "c", "d", "e", "f", "l", "n", "o"};
+											if(teams.size() <= colors.length)
+											{
+												int i = 0;
+												for(Team t : teams)
+												{
+													t.color = colors[i++];
+												}
+											}
+										}
+										for(Team t : teams)
+										{
+											int tries = 0;
+											Block highestBlock;
+											do
+											{
+												final int x = ThreadLocalRandom.current().nextInt(min, max);
+												final int z = ThreadLocalRandom.current().nextInt(min, max);
+												if(Math.abs(x) < spawnThreshold || Math.abs(z) < spawnThreshold)
+												{
+													continue;
+												}
+												highestBlock = Varo.world.getHighestBlockAt(x, z);
+												if(highestBlock.getType() == Material.LONG_GRASS || highestBlock.getType() == Material.SNOW)
+												{
+													highestBlock = Varo.world.getBlockAt(x, highestBlock.getY() - 1, z);
+												}
+												if(highestBlock != null && highestBlock.getType().isSolid())
+												{
+													break;
+												}
+												if(++tries == 50000)
+												{
+													goodWorld = false;
+													break;
+												}
+											}
+											while(true);
+											if(!goodWorld)
+											{
+												break;
+											}
+											final Location spawnPoint = highestBlock.getLocation();
+											spawnPoint.setX(spawnPoint.getX() + .5);
+											spawnPoint.setZ(spawnPoint.getZ() + .5);
+											placeBedrockUnder(spawnPoint);
+											t.spawnPoint = spawnPoint;
+											t.name = t.getName();
+										}
 									}
+									while(!goodWorld);
 									Team.updateConfig();
 									for(Player p : onlinePlayers)
 									{
@@ -672,6 +703,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 										}
 									}
 									startTimer = 0;
+									getServer().getPluginManager().callEvent(new VaroRoundStartEvent());
 								}
 							}
 						}
@@ -688,16 +720,14 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 						}
 						else
 						{
-
 							if(!(s instanceof Player))
 							{
 								Message.PREMATURE_END.send(s);
 							}
 							for(Player p : getServer().getOnlinePlayers())
 							{
-								final String message = s instanceof Player ? Message.PREMATURE_END_BY.get(p).replace("%", s.getName()) : Message.PREMATURE_END.get(p);
-								p.sendTitle("", message, 0, 50, 20);
-								p.sendMessage(message);
+								p.sendTitle("", Message.PREMATURE_END.get(p), 0, 50, 20);
+								Message.PREMATURE_END.send(p);
 							}
 							endRound();
 						}
@@ -935,6 +965,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		}
 		Varo.world = null;
 		Varo.instance.getServer().getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->Varo.startTimer = 0, 80);
+		Varo.instance.getServer().getPluginManager().callEvent(new VaroRoundEndEvent());
 	}
 
 	private void placeBedrockUnder(Location location)
@@ -1291,11 +1322,11 @@ enum Message
 	START_INSUFFICIENT_PLAYERS("§cThere are not enough players to start.", "§cEs sind nicht genug Spieler zum starten da.", "§cEr zijn niet genoeg spelers om te starten."),
 	AUTOSTART_TIME("A new Varo round will start in % seconds.", "Eine neue Varo Runde wird in % Sekunden starten.", "Een nieuwe Varo begint in % seconden."),
 	GET_READY("§eGet ready!", "§eMach dich bereit!", "§eMaak je klaar!"),
+	GET_READY_AGAIN("Sorry, that was a bad world.", "Entschuldigung, das war eine schlechte Welt.", "Sorry, dat was een slechte wereld."),
 	HAVE_FUN("§aHave fun!", "§aViel Spaß!", "§aVeel plezier!"),
 	HAVE_FUN_TEAMS("§aHave fun and communicate with your team using §6/t!", "§aViel Spaß und kommuniziere mit deinem Team mit §6/t!", "§aVeel plezier en communiceer met je team met behulp van §6/t!"),
-	COMPASS_INFO("Your compass points to the center (0, 0) where you're safe from the border.", "Dein Kompass zeigt auf die Mitte (0, 0) bei der du von der Grenze sicher bist.", "Je kompas wijst naar het midden (0, 0) waar je veilig bent voor de rand."),
-	PREMATURE_END("The Varo round has been terminated prematurely.", "Die Varo Runde wurde frühzeitig beendet.", "Deze Varo ronde is vroegtijdig beëindigd."),
-	PREMATURE_END_BY("The Varo round has been terminated prematurely by %.", "Die Varo Runde wurde frühzeitig von % beendet.", "Deze Varo ronde is vroegtijdig beëindigd door %.");
+	COMPASS_INFO("Your compass points to the center (0, 0) where you're safe from the shrinking border.", "Dein Kompass zeigt auf die Mitte (0, 0) bei der du von der schrumpfenden Worldborder sicher bist.", "Je kompas wijst naar het midden (0, 0) waar je veilig bent voor de krimpende rand."),
+	PREMATURE_END("The Varo round has been terminated prematurely.", "Die Varo Runde wurde frühzeitig beendet.", "Deze Varo ronde is vroegtijdig beëindigd.");
 
 	final String en;
 	final String de;
