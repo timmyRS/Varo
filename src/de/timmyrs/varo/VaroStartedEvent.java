@@ -1,15 +1,14 @@
-package de.timmyrs.varo.events;
+package de.timmyrs.varo;
 
-import de.timmyrs.varo.Varo;
 import org.bukkit.World;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
-
+/**
+ * Called when a Varo round has started and is no longer cancellable.
+ */
 @SuppressWarnings("unused")
-public class VaroRoundStartEvent extends Event
+public class VaroStartedEvent extends Event
 {
 	private static final HandlerList handlers = new HandlerList();
 
@@ -18,7 +17,6 @@ public class VaroRoundStartEvent extends Event
 		return handlers;
 	}
 
-	@SuppressWarnings("unused")
 	public static HandlerList getHandlerList()
 	{
 		return handlers;
@@ -27,10 +25,5 @@ public class VaroRoundStartEvent extends Event
 	public World getWorld()
 	{
 		return Varo.world;
-	}
-
-	public HashMap<Integer, ItemStack> getStartItems()
-	{
-		return Varo.startItems;
 	}
 }

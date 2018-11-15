@@ -1,7 +1,5 @@
 package de.timmyrs.varo;
 
-import de.timmyrs.varo.events.VaroRoundEndEvent;
-import de.timmyrs.varo.events.VaroRoundStartEvent;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -45,8 +43,8 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 {
 	static final ArrayList<Team> teams = new ArrayList<>();
 	static Varo instance;
-	public static World world;
-	public static final HashMap<Integer, ItemStack> startItems = new HashMap<>();
+	static World world;
+	private static final HashMap<Integer, ItemStack> startItems = new HashMap<>();
 	private static int startTimer = 0;
 
 	private static void handleWorldShrinking()
@@ -269,11 +267,11 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		}
 		//noinspection unchecked
 		final ArrayList<HashMap<String, Object>> startItems = (ArrayList<HashMap<String, Object>>) getConfig().getList("startItems");
-		if(startItems != null)
+		synchronized(Varo.startItems)
 		{
-			synchronized(Varo.startItems)
+			Varo.startItems.clear();
+			if(startItems != null)
 			{
-				Varo.startItems.clear();
 				for(HashMap<String, Object> i : startItems)
 				{
 					final ItemStack item = new ItemStack(Material.valueOf(((String) i.get("type")).toUpperCase()), (Integer) i.get("amount"));
@@ -441,270 +439,275 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 							if(onlinePlayers.size() / getConfig().getInt("maxTeamSize") < 2)
 							{
 								Message.START_INSUFFICIENT_PLAYERS.send(s);
+								return true;
 							}
-							else
+							synchronized(teams)
 							{
-								synchronized(teams)
+								final ArrayList<Team> _teams = new ArrayList<>(teams);
+								for(Team t : _teams)
 								{
-									final ArrayList<Team> _teams = new ArrayList<>(teams);
-									for(Team t : _teams)
+									synchronized(t.players)
 									{
-										synchronized(t.players)
+										boolean changed;
+										do
 										{
-											boolean changed;
-											do
+											changed = false;
+											for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 											{
-												changed = false;
-												for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
+												final OfflinePlayer p = getServer().getOfflinePlayer(entry.getKey());
+												if(p == null || !p.isOnline())
 												{
-													final OfflinePlayer p = getServer().getOfflinePlayer(entry.getKey());
-													if(p == null || !p.isOnline())
+													t.handleLeave(entry.getKey());
+													changed = true;
+													break;
+												}
+											}
+
+										}
+										while(changed);
+									}
+								}
+								final ArrayList<Player> teamless = new ArrayList<>();
+								for(Player p : onlinePlayers)
+								{
+									if(Team.of(p) == null)
+									{
+										teamless.add(p);
+									}
+								}
+								for(Team t : teams)
+								{
+									synchronized(t.players)
+									{
+										if(t.players.size() < getConfig().getInt("maxTeamSize"))
+										{
+											final ArrayList<Player> removedTeamless = new ArrayList<>();
+											for(Player p : teamless)
+											{
+												synchronized(t.players)
+												{
+													p.sendMessage(Message.TEAM_JOINED.get(p).replace("%", t.getName()));
+													for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
 													{
-														t.handleLeave(entry.getKey());
-														changed = true;
+														Player tp = getServer().getPlayer(entry.getKey());
+														if(tp.isOnline())
+														{
+															tp.sendMessage(Message.TEAM_JOIN.get(tp).replace("%", p.getName()));
+														}
+													}
+													t.players.put(p.getUniqueId(), 0);
+													removedTeamless.add(p);
+													if(t.players.size() < getConfig().getInt("maxTeamSize"))
+													{
 														break;
 													}
 												}
-
 											}
-											while(changed);
+											for(Player p : removedTeamless)
+											{
+												teamless.remove(p);
+											}
 										}
 									}
-									final ArrayList<Player> teamless = new ArrayList<>();
+								}
+								if(teamless.size() > 0)
+								{
+									Team t = new Team();
+									for(Player p : teamless)
+									{
+										if(t.players.size() >= getConfig().getInt("maxTeamSize"))
+										{
+											teams.add(t);
+											t = new Team();
+										}
+										t.players.put(p.getUniqueId(), 0);
+									}
+									if(t.players.size() > 0)
+									{
+										teams.add(t);
+									}
+								}
+								Team.updateConfig();
+								if(teams.size() < 2)
+								{
+									Message.START_INSUFFICIENT_PLAYERS.send(s);
+									return true;
+								}
+								final VaroStartEvent e;
+								synchronized(Varo.startItems)
+								{
+									e = new VaroStartEvent(Varo.startItems);
+								}
+								Varo.instance.getServer().getPluginManager().callEvent(e);
+								if(e.isCancelled())
+								{
+									return true;
+								}
+								boolean goodWorld = true;
+								do
+								{
 									for(Player p : onlinePlayers)
 									{
-										if(Team.of(p) == null)
+										if(goodWorld)
 										{
-											teamless.add(p);
+											p.sendTitle(Message.GET_READY.get(p), "", 0, 70, 50);
+											Message.GET_READY.send(p);
+										}
+										else
+										{
+											p.sendTitle(Message.GET_READY.get(p), Message.GET_READY_AGAIN.get(p), 0, 70, 50);
+											Message.GET_READY_AGAIN.send(p);
+										}
+									}
+									goodWorld = true;
+									if(Varo.world != null)
+									{
+										getServer().unloadWorld(Varo.world, true);
+										final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
+										if(!deleteIndicator.exists())
+										{
+											try
+											{
+												//noinspection ResultOfMethodCallIgnored
+												deleteIndicator.createNewFile();
+											}
+											catch(IOException ignored)
+											{
+											}
+										}
+										Varo.world = null;
+									}
+									String name;
+									do
+									{
+										name = "varo" + ThreadLocalRandom.current().nextInt(1000, 10000);
+									}
+									while(new File(name).exists());
+									WorldType wt = WorldType.getByName(getConfig().getString("worldType"));
+									if(wt == null)
+									{
+										wt = WorldType.NORMAL;
+									}
+									getServer().createWorld(new WorldCreator(name).type(wt).generateStructures(getConfig().getBoolean("generateStructures")).generatorSettings(getConfig().getString("generatorSettings")));
+									Varo.world = getServer().getWorld(name);
+									final Location worldSpawn = Varo.world.getHighestBlockAt(0, 0).getLocation();
+									worldSpawn.setX(worldSpawn.getX() + .5);
+									worldSpawn.setZ(worldSpawn.getZ() + .5);
+									placeBedrockUnder(worldSpawn);
+									Varo.world.setSpawnLocation(worldSpawn);
+									Varo.world.setGameRuleValue("announceAdvancements", "false");
+									Varo.world.setGameRuleValue("keepInventory", String.valueOf(getConfig().getBoolean("keepInventory")));
+									Varo.world.setGameRuleValue("doFireTick", String.valueOf(getConfig().getBoolean("doFireTick")));
+									Varo.world.setGameRuleValue("mobGriefing", String.valueOf(getConfig().getBoolean("mobGriefing")));
+									Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(getConfig().getBoolean("showDeathMessages")));
+									final double worldSize = (getConfig().getInt("extraWorldSizePerPlayer") * getServer().getOnlinePlayers().size());
+									getConfig().set("donttouchthis.worldSize", worldSize + getConfig().getInt("baseWorldSize"));
+									getConfig().set("donttouchthis.ongoing", true);
+									getConfig().set("donttouchthis.shrinkFactor", 1);
+									Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
+									Varo.world.getWorldBorder().setSize(worldSize);
+									Varo.world.getWorldBorder().setWarningDistance(getConfig().getInt("baseWorldSize"));
+									Varo.world.getWorldBorder().setDamageBuffer(0);
+									final int min = (int) Math.round(worldSize * -0.5);
+									final int max = (int) Math.round(worldSize * 0.5) + 1;
+									final int spawnThreshold = getConfig().getInt("baseWorldSize") / 2;
+									if(getConfig().getBoolean("colorNames"))
+									{
+										final String[] colors = new String[]{"1", "2", "3", "4", "5", "6", "9", "a", "b", "c", "d", "e", "f", "l", "n", "o"};
+										if(teams.size() <= colors.length)
+										{
+											int i = 0;
+											for(Team t : teams)
+											{
+												t.color = colors[i++];
+											}
 										}
 									}
 									for(Team t : teams)
 									{
-										synchronized(t.players)
-										{
-											if(t.players.size() < getConfig().getInt("maxTeamSize"))
-											{
-												final ArrayList<Player> removedTeamless = new ArrayList<>();
-												for(Player p : teamless)
-												{
-													synchronized(t.players)
-													{
-														p.sendMessage(Message.TEAM_JOINED.get(p).replace("%", t.getName()));
-														for(Map.Entry<UUID, Integer> entry : t.players.entrySet())
-														{
-															Player tp = getServer().getPlayer(entry.getKey());
-															if(tp.isOnline())
-															{
-																tp.sendMessage(Message.TEAM_JOIN.get(tp).replace("%", p.getName()));
-															}
-														}
-														t.players.put(p.getUniqueId(), 0);
-														removedTeamless.add(p);
-														if(t.players.size() < getConfig().getInt("maxTeamSize"))
-														{
-															break;
-														}
-													}
-												}
-												for(Player p : removedTeamless)
-												{
-													teamless.remove(p);
-												}
-											}
-										}
-									}
-									if(teamless.size() > 0)
-									{
-										Team t = new Team();
-										for(Player p : teamless)
-										{
-											if(t.players.size() >= getConfig().getInt("maxTeamSize"))
-											{
-												teams.add(t);
-												t = new Team();
-											}
-											t.players.put(p.getUniqueId(), 0);
-										}
-										if(t.players.size() > 0)
-										{
-											teams.add(t);
-										}
-									}
-									Team.updateConfig();
-									if(teams.size() < 2)
-									{
-										Message.START_INSUFFICIENT_PLAYERS.send(s);
-										return true;
-									}
-									boolean goodWorld = true;
-									do
-									{
-										for(Player p : onlinePlayers)
-										{
-											if(goodWorld)
-											{
-												p.sendTitle(Message.GET_READY.get(p), "", 0, 70, 50);
-												Message.GET_READY.send(p);
-											}
-											else
-											{
-												p.sendTitle(Message.GET_READY.get(p), Message.GET_READY_AGAIN.get(p), 0, 70, 50);
-												Message.GET_READY_AGAIN.send(p);
-											}
-										}
-										goodWorld = true;
-										if(Varo.world != null)
-										{
-											getServer().unloadWorld(Varo.world, true);
-											final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
-											if(!deleteIndicator.exists())
-											{
-												try
-												{
-													//noinspection ResultOfMethodCallIgnored
-													deleteIndicator.createNewFile();
-												}
-												catch(IOException ignored)
-												{
-												}
-											}
-											Varo.world = null;
-										}
-										String name;
+										int tries = 0;
+										Block highestBlock;
 										do
 										{
-											name = "varo" + ThreadLocalRandom.current().nextInt(1000, 10000);
-										}
-										while(new File(name).exists());
-										WorldType wt = WorldType.getByName(getConfig().getString("worldType"));
-										if(wt == null)
-										{
-											wt = WorldType.NORMAL;
-										}
-										getServer().createWorld(new WorldCreator(name).type(wt).generateStructures(getConfig().getBoolean("generateStructures")).generatorSettings(getConfig().getString("generatorSettings")));
-										Varo.world = getServer().getWorld(name);
-										final Location worldSpawn = Varo.world.getHighestBlockAt(0, 0).getLocation();
-										worldSpawn.setX(worldSpawn.getX() + .5);
-										worldSpawn.setZ(worldSpawn.getZ() + .5);
-										placeBedrockUnder(worldSpawn);
-										Varo.world.setSpawnLocation(worldSpawn);
-										Varo.world.setGameRuleValue("announceAdvancements", "false");
-										Varo.world.setGameRuleValue("keepInventory", String.valueOf(getConfig().getBoolean("keepInventory")));
-										Varo.world.setGameRuleValue("doFireTick", String.valueOf(getConfig().getBoolean("doFireTick")));
-										Varo.world.setGameRuleValue("mobGriefing", String.valueOf(getConfig().getBoolean("mobGriefing")));
-										Varo.world.setGameRuleValue("showDeathMessages", String.valueOf(getConfig().getBoolean("showDeathMessages")));
-										final double worldSize = (getConfig().getInt("extraWorldSizePerPlayer") * getServer().getOnlinePlayers().size());
-										getConfig().set("donttouchthis.worldSize", worldSize + getConfig().getInt("baseWorldSize"));
-										getConfig().set("donttouchthis.ongoing", true);
-										getConfig().set("donttouchthis.shrinkFactor", 1);
-										Varo.world.getWorldBorder().setCenter(Varo.world.getSpawnLocation());
-										Varo.world.getWorldBorder().setSize(worldSize);
-										Varo.world.getWorldBorder().setWarningDistance(getConfig().getInt("baseWorldSize"));
-										Varo.world.getWorldBorder().setDamageBuffer(0);
-										final int min = (int) Math.round(worldSize * -0.5);
-										final int max = (int) Math.round(worldSize * 0.5) + 1;
-										final int spawnThreshold = getConfig().getInt("baseWorldSize") / 2;
-										if(getConfig().getBoolean("colorNames"))
-										{
-											final String[] colors = new String[]{"1", "2", "3", "4", "5", "6", "9", "a", "b", "c", "d", "e", "f", "l", "n", "o"};
-											if(teams.size() <= colors.length)
+											final int x = ThreadLocalRandom.current().nextInt(min, max);
+											final int z = ThreadLocalRandom.current().nextInt(min, max);
+											if(Math.abs(x) < spawnThreshold || Math.abs(z) < spawnThreshold)
 											{
-												int i = 0;
-												for(Team t : teams)
-												{
-													t.color = colors[i++];
-												}
+												continue;
 											}
-										}
-										for(Team t : teams)
-										{
-											int tries = 0;
-											Block highestBlock;
-											do
+											highestBlock = Varo.world.getHighestBlockAt(x, z);
+											if(highestBlock.getType() == Material.LONG_GRASS || highestBlock.getType() == Material.SNOW)
 											{
-												final int x = ThreadLocalRandom.current().nextInt(min, max);
-												final int z = ThreadLocalRandom.current().nextInt(min, max);
-												if(Math.abs(x) < spawnThreshold || Math.abs(z) < spawnThreshold)
-												{
-													continue;
-												}
-												highestBlock = Varo.world.getHighestBlockAt(x, z);
-												if(highestBlock.getType() == Material.LONG_GRASS || highestBlock.getType() == Material.SNOW)
-												{
-													highestBlock = Varo.world.getBlockAt(x, highestBlock.getY() - 1, z);
-												}
-												if(highestBlock != null && highestBlock.getType().isSolid())
-												{
-													break;
-												}
-												if(++tries == 50000)
-												{
-													goodWorld = false;
-													break;
-												}
+												highestBlock = Varo.world.getBlockAt(x, highestBlock.getY() - 1, z);
 											}
-											while(true);
-											if(!goodWorld)
+											if(highestBlock != null && highestBlock.getType().isSolid())
 											{
 												break;
 											}
-											final Location spawnPoint = highestBlock.getLocation();
-											spawnPoint.setX(spawnPoint.getX() + .5);
-											spawnPoint.setZ(spawnPoint.getZ() + .5);
-											placeBedrockUnder(spawnPoint);
-											t.spawnPoint = spawnPoint;
-											t.name = t.getName();
-										}
-									}
-									while(!goodWorld);
-									Team.updateConfig();
-									for(Player p : onlinePlayers)
-									{
-										p.setGameMode(GameMode.SURVIVAL);
-										Varo.clearPlayer(p);
-										p.getInventory().clear();
-										final Team t = Team.of(p);
-										p.teleport(t.spawnPoint);
-										if(t.color != null)
-										{
-											p.setPlayerListName("§" + t.color + p.getName());
-										}
-										synchronized(t.players)
-										{
-											if(t.players.get(p.getUniqueId()) != 0)
+											if(++tries == 50000)
 											{
-												t.players.put(p.getUniqueId(), 0);
+												goodWorld = false;
+												break;
 											}
 										}
-										boolean hasCompass = false;
-										synchronized(Varo.startItems)
+										while(true);
+										if(!goodWorld)
 										{
-											for(Map.Entry<Integer, ItemStack> i : Varo.startItems.entrySet())
-											{
-												p.getInventory().setItem(i.getKey(), i.getValue().clone());
-												if(!hasCompass && i.getValue().getType() == Material.COMPASS)
-												{
-													hasCompass = true;
-												}
-											}
+											break;
 										}
-										p.getInventory().setHeldItemSlot(0);
-										if(getConfig().getInt("maxTeamSize") > 1)
-										{
-											Message.HAVE_FUN_TEAMS.send(p);
-										}
-										else
-										{
-											Message.HAVE_FUN.send(p);
-										}
-										if(hasCompass)
-										{
-											Message.COMPASS_INFO.send(p);
-										}
+										final Location spawnPoint = highestBlock.getLocation();
+										spawnPoint.setX(spawnPoint.getX() + .5);
+										spawnPoint.setZ(spawnPoint.getZ() + .5);
+										placeBedrockUnder(spawnPoint);
+										t.spawnPoint = spawnPoint;
+										t.name = t.getName();
 									}
-									startTimer = 0;
-									getServer().getPluginManager().callEvent(new VaroRoundStartEvent());
 								}
+								while(!goodWorld);
+								Team.updateConfig();
+								for(Player p : onlinePlayers)
+								{
+									p.setGameMode(GameMode.SURVIVAL);
+									Varo.clearPlayer(p);
+									p.getInventory().clear();
+									final Team t = Team.of(p);
+									p.teleport(t.spawnPoint);
+									if(t.color != null)
+									{
+										p.setPlayerListName("§" + t.color + p.getName());
+									}
+									synchronized(t.players)
+									{
+										if(t.players.get(p.getUniqueId()) != 0)
+										{
+											t.players.put(p.getUniqueId(), 0);
+										}
+									}
+									boolean hasCompass = false;
+									for(Map.Entry<Integer, ItemStack> i : e.startItems.entrySet())
+									{
+										p.getInventory().setItem(i.getKey(), i.getValue().clone());
+										if(!hasCompass && i.getValue().getType() == Material.COMPASS)
+										{
+											hasCompass = true;
+										}
+									}
+									p.getInventory().setHeldItemSlot(0);
+									if(getConfig().getInt("maxTeamSize") > 1)
+									{
+										Message.HAVE_FUN_TEAMS.send(p);
+									}
+									else
+									{
+										Message.HAVE_FUN.send(p);
+									}
+									if(hasCompass)
+									{
+										Message.COMPASS_INFO.send(p);
+									}
+								}
+								startTimer = 0;
+								getServer().getPluginManager().callEvent(new VaroStartedEvent());
 							}
 						}
 					}
@@ -728,8 +731,9 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 							{
 								p.sendTitle("", Message.PREMATURE_END.get(p), 0, 50, 20);
 								Message.PREMATURE_END.send(p);
+								Message.NEW_GAME_SOON.send(p);
 							}
-							endRound();
+							endRound(new ArrayList<>());
 						}
 					}
 					else if(a[0].equalsIgnoreCase("savedefaultitems"))
@@ -936,7 +940,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		return true;
 	}
 
-	static void endRound()
+	static void endRound(ArrayList<OfflinePlayer> winners)
 	{
 		Varo.startTimer = -1;
 		Varo.instance.getConfig().set("donttouchthis.ongoing", false);
@@ -949,7 +953,6 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 			}
 			Varo.clearPlayer(p);
 			p.getInventory().clear();
-			Message.NEW_GAME_SOON.send(p);
 		}
 		final File deleteIndicator = new File(Varo.world.getName() + "/DELETE");
 		if(!deleteIndicator.exists())
@@ -965,7 +968,7 @@ public class Varo extends JavaPlugin implements Listener, CommandExecutor
 		}
 		Varo.world = null;
 		Varo.instance.getServer().getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->Varo.startTimer = 0, 80);
-		Varo.instance.getServer().getPluginManager().callEvent(new VaroRoundEndEvent());
+		Varo.instance.getServer().getPluginManager().callEvent(new VaroEndedEvent(winners));
 	}
 
 	private void placeBedrockUnder(Location location)
@@ -1519,22 +1522,31 @@ class Team
 					Team t = Varo.teams.get(0);
 					synchronized(t.players)
 					{
-						for(Player p : Varo.instance.getServer().getOnlinePlayers())
+						Varo.instance.getServer().getScheduler().scheduleSyncDelayedTask(Varo.instance, ()->
 						{
-							final String winMessage;
-							if(t.getName().contains(" & "))
+							for(Player p : Varo.instance.getServer().getOnlinePlayers())
 							{
-								winMessage = Message.WIN_MULTIPLE.get(p).replace("%", t.getName());
-								p.sendTitle("", winMessage, 0, 50, 50);
+								final String winMessage;
+								if(t.getName().contains(" & "))
+								{
+									winMessage = Message.WIN_MULTIPLE.get(p).replace("%", t.getName());
+									p.sendTitle("", winMessage, 0, 50, 50);
+								}
+								else
+								{
+									winMessage = Message.WIN_SINGULAR.get(p).replace("%", t.getName());
+									p.sendTitle(winMessage, Message.NEW_GAME_SOON.get(p), 0, 50, 50);
+								}
+								p.sendMessage(winMessage);
+								Message.NEW_GAME_SOON.send(p);
 							}
-							else
-							{
-								winMessage = Message.WIN_SINGULAR.get(p).replace("%", t.getName());
-								p.sendTitle(winMessage, Message.NEW_GAME_SOON.get(p), 0, 50, 50);
-							}
-							p.sendMessage(winMessage);
+						}, 1);
+						final ArrayList<OfflinePlayer> winners = new ArrayList<>();
+						for(UUID u : t.players.keySet())
+						{
+							winners.add(Varo.instance.getServer().getOfflinePlayer(u));
 						}
-						Varo.endRound();
+						Varo.endRound(winners);
 					}
 				}
 			}
